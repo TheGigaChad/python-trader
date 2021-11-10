@@ -1,8 +1,8 @@
 import enum
-import logging
 import queue
 import threading
 import time
+import warnings
 from subprocess import Popen, PIPE
 
 import alpaca_trade_api as tradeapi
@@ -10,10 +10,9 @@ import psutil
 
 from algo_config import KEY, SECRET
 
-import warnings
 warnings.filterwarnings("ignore")
 
-# ------------
+# ------------xxxxxxx
 # API
 # ------------
 # Get your own key from whatever service you want. In this case, I am using
@@ -68,17 +67,10 @@ class Subprocess:
         self.out_comm_thread.start()
         self.comm_queue = comm_queue
 
-        # print(
-        #     f"-----CREATE STATE----- \n name: {self.name} \n process: {self.process} \n out: {self.out_comm_thread} \n"
-        #     f" queue: {self.comm_queue}")
-
     def __del__(self):
         self.process.kill()
         self.out_comm_thread.join()
         self.in_comm_thread.join()
-        # print(
-        #     f"-----DELETE STATE----- \n name: {self.name} \n process: {self.process} \n out: {self.out_comm_thread} \n"
-        #     f" in: {self.in_comm_thread} \n queue: {self.comm_queue}")
 
     def poll(self):
         """
@@ -443,7 +435,6 @@ def manageChildren():
 # ------------
 def main():
     # Get the currently owned stocks, these are the priority to monitor
-    logging.basicConfig(filename='./algo.log', format='%(name)s - %(levelname)s - %(message)s', )
     init_list = generateInitList()
     if len(init_list) > 0:
         print(f"We currently own {init_list}, let's spin up some subprocs for them.")
@@ -453,7 +444,6 @@ def main():
         generateSubprocesses(PRIMARY_STOCK_LIST)
     while True:
         monitorChildren()
-        #  TODO - Make this work betterer
         manageChildren()
         if childCount() == 0:
             break
