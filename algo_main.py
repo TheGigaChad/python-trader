@@ -12,7 +12,7 @@ from algo_config import KEY, SECRET
 
 warnings.filterwarnings("ignore")
 
-# ------------xxxxxxx
+# ------------
 # API
 # ------------
 # Get your own key from whatever service you want. In this case, I am using
