@@ -12,7 +12,7 @@ from algo_config import KEY, SECRET
 
 warnings.filterwarnings("ignore")
 
-# ------------xxxxxxx
+# ------------
 # API
 # ------------
 # Get your own key from whatever service you want. In this case, I am using
@@ -43,6 +43,9 @@ class NamedPopen(Popen):
     def __init__(self, *args, name=None, **kwargs):
         self.name = name
         super().__init__(*args, **kwargs)
+
+    def terminate(self):
+        super().terminate()
 
 
 class Subprocess:
@@ -98,6 +101,9 @@ class Subprocess:
         if not self.process.stdout.closed:
             self.process.stdout.flush()
             pass
+
+    def terminate(self):
+        self.process.terminate()
 
 
 class SharedCashPile(object):
