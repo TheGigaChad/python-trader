@@ -44,6 +44,9 @@ class NamedPopen(Popen):
         self.name = name
         super().__init__(*args, **kwargs)
 
+    def terminate(self):
+        super().terminate()
+
 
 class Subprocess:
     f""" 
@@ -98,6 +101,9 @@ class Subprocess:
         if not self.process.stdout.closed:
             self.process.stdout.flush()
             pass
+
+    def terminate(self):
+        self.process.terminate()
 
 
 class SharedCashPile(object):

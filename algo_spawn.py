@@ -9,7 +9,9 @@ import time
 import random
 import websocket
 import json
-from marketData import Indicator, analyse
+from marketData import analyse
+from algo_indicators import Indicator
+from algo_tradeIntent import TradeIntent
 
 logging.basicConfig(filename='./algo.log', format='%(name)s - %(levelname)s - %(message)s')
 
@@ -23,15 +25,6 @@ class Position(enum.Enum):
     UNOWNED = 2
     TRADING = 3
 
-
-class TradeIntent(enum.Enum):
-    """
-    Type of trade intent, whether we want to trade it on a long or short timeframe, or hold.
-    """
-    UNKNOWN = 0
-    LONG_HOLD = 1
-    LONG_TRADE = 2
-    SHORT_TRADE = 3
 
 
 def return_trade_rating():
@@ -55,6 +48,37 @@ def getTickerName():
         return default
 
 
+def getDebugMode():
+    """
+    Determines whether we are in debug mode based on arguments passed. \n
+    :return: (boolean) debug mode
+    """
+    try:
+        name = sys.argv[1]
+        return False
+    except Exception as e:
+        print("debug mode activated")
+        return True
+
+
+def purchaseSuccessful(order_id):
+    """
+    returns true if exchange fills trade, else false if cancelled or timed out. \n
+    :param order_id: id of trade.
+    """
+    timer = 0
+    time_increment = 0.2
+    time_max = 10
+    while timer <= time_max:
+        print(f"status is: {api.get_order_by_client_order_id(order_id).status}")
+        if api.get_order_by_client_order_id(order_id).status == 'filled':
+            return True
+        else:
+            timer = timer + time_increment
+            time.sleep(time_increment)
+    return False
+
+
 def buy(stock, allowance):
     """
     The buy method for a :class:`Stock`. \n
@@ -64,19 +88,31 @@ def buy(stock, allowance):
     """
     try:
         current_price = api.get_barset(stock.ticker_name, 'minute', limit=1)[stock.ticker_name][0].h
+        print(f"current price is: {current_price}")
         qty = int(allowance / float(current_price))
+        print(f"buying quantity: {qty}")
         if qty <= 0:
             logging.warning('{} : {} insufficient funds to buy {} stock(s)'.format
                             (datetime.datetime.now().strftime("%x %X"), stock.ticker_name, qty))
             return
         order_id = str(random.randrange(1, 10000000))
+        print(f"buying..")
+        # listenForTradeUpdate(order_id, stock.ticker_name, qty, order_id)
         api.submit_order(symbol=stock.ticker_name,
                          qty=qty,
                          side='buy',
                          type='market',
                          client_order_id=order_id)
-        stock.position = Position.TRADING
-        listenForTradeUpdate(order_id)
+        print(api.get_order_by_client_order_id(order_id).status)
+        t = purchaseSuccessful(order_id)
+        if t:
+            stock.position = Position.TRADING
+            print("successful")
+        else:
+            print("retrying buy attempt, cancelling original trade")
+            api.cancel_order(order_id)
+            buy(stock, allowance)
+        print("buy offer successfully received by exchange.")
         logging.warning(
             '{} : bought {} stock(s) of {}'.format(datetime.datetime.now().strftime("%x %X"), qty, stock.ticker_name))
     except Exception as e:
@@ -189,11 +225,26 @@ def getInterval(trade_intent):
         return 0
 
 
+def getWindow(trade_intent):
+    """
+    Determines the interval based on the :class:`TimeIntent` as a period. \n
+    :param trade_intent: (TradeIntent) enum
+    :return: (string) time period
+    """
+    if trade_intent == TradeIntent.SHORT_TRADE:
+        return "1m"
+    elif trade_intent == TradeIntent.LONG_TRADE:
+        return "1h"
+    else:
+        return "1m"
+
+
 def on_open(ws):
     """
     on_open callback from :class:`websocket.WebSocketApp`. \n
     :param ws: websocket
     """
+    print("opening socket")
     auth_data = {
         "action": "authenticate",
         "data": {
@@ -210,7 +261,7 @@ def on_open(ws):
     ws.send(json.dumps(channel_data))
 
 
-def on_message(ws, message, trade_id):
+def on_message(ws, message):
     """
     on_message callback from :class:`websocket.WebSocketApp`. \n
     :param ws: websocket
@@ -218,20 +269,28 @@ def on_message(ws, message, trade_id):
     :param trade_id: (int) id of relevant trade
     """
     print(message)
-    if True:
-        print(trade_id)
-        # ws.close()
 
 
-def listenForTradeUpdate(trade_id):
+def listenForTradeUpdate(trade_id, name, qty, id):
     """
     Once a buy or sell request has been made, we listen to make sure it is successful. \n
     :param trade_id: (string) id of the relevant trade
     :return: (boolean) true/false whether trade was successful
     """
     stream = "wss://paper-api.alpaca.markets/stream"
-    ws = websocket.WebSocketApp(stream, on_open=on_open(), on_message=on_message(trade_id))
-    ws.run_forever()
+    try:
+        ws = websocket.WebSocketApp(stream, on_open=on_open, on_message=on_message)
+        print(ws)
+        api.submit_order(symbol=name,
+                         qty=qty,
+                         side='buy',
+                         type='market',
+                         client_order_id=id)
+
+        # ws.run_forever()
+    except Exception as e:
+        print(e)
+
     return True
 
 
@@ -247,11 +306,11 @@ def getStockPrice(ticker_name):
         print(e)
 
 
-def interpretMarket(stock_name, interval, indicator_list):
+def interpretMarket(stock_name, trade_intent, indicator_list):
     """
     This is the container for the market interpretation. \n
     :param stock_name: (string) name of asset.
-    :param interval: The interval used for bars data.
+    :param trade_intent: (TradeIntent) determines whether we are short/long/hold analysing.
     :param indicator_list: list of indicators we want to use for our interpretation
     :return: confidence value [-1,1] that determines what to do.
     """
@@ -259,7 +318,7 @@ def interpretMarket(stock_name, interval, indicator_list):
         '{} : {} started successfully'.format(datetime.datetime.now().strftime("%x %X"), stock_name))
     confidence = 0
     for i in indicator_list:
-        i_conf = analyse(stock_name, i, interval)
+        i_conf = analyse(stock_name, trade_intent, i)
         confidence = confidence + i_conf
 
     return confidence
@@ -274,7 +333,8 @@ def run(stock):
     j = random.randrange(1, 4)
     while True:
         try:
-            confidence = interpretMarket(stock.ticker_name, stock.interval, stock.indicator_list)
+            confidence = interpretMarket(stock.ticker_name, getWindow(stock.trade_intent),
+                                         stock.indicator_list)
 
             if stock.lower_confidence_giveup <= confidence <= stock.upper_confidence_giveup or i > j:
                 break
@@ -301,6 +361,7 @@ def quitting(name):
     :param name:  ticker name
     """
     logging.warning('{} : {} subprocess closed successfully.'.format(datetime.datetime.now().strftime("%x %X"), name))
+    print("quit")
 
 
 # ----------
@@ -310,13 +371,15 @@ def main():
     """
     main method for the subprocess. \n
     """
+    debug_mode = getDebugMode()
     ticker_name = getTickerName()
     indicator_list = [Indicator.MACD, Indicator.RSI]
     trade_intent = getTradeIntent()
     interval = getInterval(trade_intent)
     position = getInitialPosition(ticker_name)
     stock = Stock(ticker_name, indicator_list, trade_intent, interval, position)
-    run(stock)
+    if not debug_mode:
+        run(stock)
     quitting(stock.ticker_name)
 
 
