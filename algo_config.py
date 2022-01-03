@@ -1,6 +1,13 @@
-KEY = "PKQWAWCMVV6DD66U9S7D"
-SECRET = "ObqIv4clTHjt5uGqwVD4CJdGRH3ggQfTef7fOeUa"
-HOST = "156.67.72.201"
-DATABASE = "u238726529_stock_trader"
-USER = "u238726529_mike"
-PASSWORD = "M1ch4311"
+import os
+from os.path import join, dirname
+from dotenv import load_dotenv
+
+dotenv_path = join(dirname(__file__), '.env')
+load_dotenv(dotenv_path)
+
+KEY = os.environ.get("KEY")
+SECRET = os.environ.get("SECRET")
+HOST = os.environ.get("HOST")
+DATABASE = os.environ.get("DATABASE")
+USER = os.environ.get("USER")
+PASSWORD = os.environ.get("PASSWORD")
