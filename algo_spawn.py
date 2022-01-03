@@ -2,7 +2,7 @@ import sys
 import logging
 import datetime
 from algo_main import api
-from algo_config import KEY, SECRET
+from algo_config import ALPACA_PAPER_KEY, ALPACA_PAPER_SECRET
 from algo_stock import Stock
 import enum
 import time
@@ -248,8 +248,8 @@ def on_open(ws):
     auth_data = {
         "action": "authenticate",
         "data": {
-            "key_id": KEY,
-            "secret_key": SECRET}
+            "key_id": ALPACA_PAPER_KEY,
+            "secret_key": ALPACA_PAPER_SECRET}
     }
     ws.send(json.dumps(auth_data))
     channel_data = {

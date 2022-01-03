@@ -5,6 +5,7 @@ from datetime import timedelta
 
 import numpy as np
 import pandas
+import json
 import yahoo_fin.stock_info as si
 from pytz import timezone
 from ta.momentum import RSIIndicator
@@ -13,6 +14,7 @@ import pandas_ta as pta
 
 from algo_main import api
 from algo_tradeIntent import TradeIntent
+from marketData_SQL import getSQLWindowDataAsJson
 
 tz = timezone('EST')
 
@@ -34,55 +36,35 @@ class Indicator(str, enum.Enum):
     SMA = 'SMA'
 
 
-def getWindow(indicator, trade_intent):
-    # TODO - We need to get these numbers dynamically
-    if indicator == Indicator.SMA:
-        if trade_intent == TradeIntent.SHORT_TRADE:
-            return 7
-        elif trade_intent == TradeIntent.LONG_TRADE:
-            return 14
-        elif trade_intent == TradeIntent.LONG_HOLD:
-            return 21
-    elif indicator == Indicator.EMA:
-        if trade_intent == TradeIntent.SHORT_TRADE:
-            return 7
-        elif trade_intent == TradeIntent.LONG_TRADE:
-            return 14
-        elif trade_intent == TradeIntent.LONG_HOLD:
-            return 21
-    elif indicator == Indicator.MACD:
-        if trade_intent == TradeIntent.SHORT_TRADE:
-            return 12, 26, 9
-        elif trade_intent == TradeIntent.LONG_TRADE:
-            return 12, 26, 9
-        elif trade_intent == TradeIntent.LONG_HOLD:
-            return 12, 26, 9
-        else:
-            return 12, 26, 9
-    elif indicator == Indicator.RSI:
-        if trade_intent == TradeIntent.SHORT_TRADE:
-            return 7
-        elif trade_intent == TradeIntent.LONG_TRADE:
-            return 14
-        elif trade_intent == TradeIntent.LONG_HOLD:
-            return 21
-    elif indicator == Indicator.VOLUME:
-        if trade_intent == TradeIntent.SHORT_TRADE:
-            return 7
-        elif trade_intent == TradeIntent.LONG_TRADE:
-            return 14
-        elif trade_intent == TradeIntent.LONG_HOLD:
-            return 21
-    elif indicator == Indicator.BOLLINGER:
-        if trade_intent == TradeIntent.SHORT_TRADE:
-            return 20
-        elif trade_intent == TradeIntent.LONG_TRADE:
-            return 40
-        elif trade_intent == TradeIntent.LONG_HOLD:
-            return 60
-    else:
-        print(f"getWindow could not determine the Trade Intent {trade_intent} for the indicator {indicator}")
-        return 0
+def getWindow(indicator, trade_intent, ticker, file="algo_windows.json"):
+    """
+    gets the window for analysis. \n
+    :param indicator: (Indicator) type of indicator used for analysis.
+    :param trade_intent: (TradeIntent) intended trade type (short,long,hold)
+    :param file: (file) optional file input override for testing.
+    :param ticker: (str) name of ticker.
+    :return: (int) window value
+    """
+    # TODO - add default type
+    # TODO - bullet proof MACD option
+    json_file = open(file)
+    json_data = json.load(json_file)
+    json_file.close()
+    for item in json_data:
+        if item["NAME"] == ticker:
+            if indicator == Indicator.MACD:
+                macd_indicators = ["FAST", "SLOW", "SIG"]
+                macd_fast = indicator.toString() + "_" + macd_indicators[0] + "_" + trade_intent.toString()
+                macd_slow = indicator.toString() + "_" + macd_indicators[1] + "_" + trade_intent.toString()
+                macd_sig = indicator.toString() + "_" + macd_indicators[2] + "_" + trade_intent.toString()
+                return item[macd_fast], item[macd_slow], item[macd_sig]
+            else:
+                sql_column_name = indicator.toString() + "_" + trade_intent.toString()
+                return item[sql_column_name]
+
+    print(f"getWindow could not determine the Trade Intent {trade_intent} for the indicator {indicator}")
+    return 0
+
 
 
 def get_data_bars(symbols, rate, slow, fast):
@@ -131,14 +113,15 @@ def getRSI(window, data):
     return RSIIndicator(close=data['Adj Close'], window=window)
 
 
-def analyseRSI(trade_intent, data):
+def analyseRSI(trade_intent, data, ticker):
     """
     RSI analysis of the provided asset based on provided timeframe.\n
     :param trade_intent: (TradeIntent) determines whether we are short/long/hold analysing.
-    :param data: (obj) yahoo-fin stock object relating to stock.
+    :param data: (pandas.DataFrame) yahoo-fin stock object relating to stock.
+    :param ticker: (str) name of stock
     :return: (float) the confidence in the provided asset
     """
-    window = getWindow(Indicator.RSI, trade_intent)
+    window = getWindow(Indicator.RSI, trade_intent, ticker)
     rsi_data = getRSI(window, data)
 
     if rsi_data is None:
@@ -176,14 +159,15 @@ def getEMA(window, data):
     return ema_data
 
 
-def analyseEMA(trade_intent, data):
+def analyseEMA(trade_intent, data, ticker):
     """
     EMA analysis of the provided asset based on provided timeframe.\n
     :param trade_intent: (TradeIntent) determines whether we are short/long/hold analysing.
     :param data: (pandas.DataFrame) data set
+    :param ticker: (str) name of stock
     :return: (float) the confidence in the provided asset
     """
-    window = getWindow(Indicator.EMA, trade_intent)
+    window = getWindow(Indicator.EMA, trade_intent, ticker)
     ema_data = getEMA(window, data)
     return 1.0
 
@@ -211,27 +195,29 @@ def appendBollinger(window, data):
     return data
 
 
-def analyseBollinger(trade_intent, data):
+def analyseBollinger(trade_intent, data, ticker):
     """
     Bollinger analysis of the provided asset based on provided timeframe.\n
     :param trade_intent: (TradeIntent) determines whether we are short/long/hold analysing.
     :param data: (data) historical data of stock
+    :param ticker: (str) name of stock
     :return: (float) the confidence in the provided asset
     """
-    window = getWindow(Indicator.BOLLINGER, trade_intent)
+    window = getWindow(Indicator.BOLLINGER, trade_intent, ticker)
     bollinger_data = appendBollinger(window, data)
 
     return 1.0
 
 
-def getMACD(trade_intent, data):
+def getMACD(trade_intent, data, ticker):
     """
     MACD analysis of the provided asset based on provided timeframe.\n
     :param trade_intent: (TradeIntent) determines whether we are short/long/hold analysing.
     :param data: (pandas.Dataframe) stock data
+    :param ticker: (str) name of stock
     :return: (float) the confidence in the provided asset
     """
-    window_fast, window_slow, signal = getWindow(Indicator.MACD, trade_intent)
+    window_fast, window_slow, signal = getWindow(Indicator.MACD, trade_intent, ticker)
     macd_data = pta.macd(close=data['Adj Close'], fast=window_fast, slow=window_slow, signal=signal, append=True)
     return macd_data
 
@@ -247,14 +233,15 @@ def analyseMACD(trade_intent, data):
     return 1.0
 
 
-def analyseVolume(trade_intent, data):
+def analyseVolume(trade_intent, data, ticker):
     """
     Volume analysis of the provided asset based on provided timeframe.\n
     :param trade_intent: (TradeIntent) determines whether we are short/long/hold analysing.
     :param data: (obj) yahoo-fin stock object relating to stock.
+    :param ticker: (str) name of stock
     :return: (float) the confidence in the provided asset
     """
-    window = getWindow(Indicator.VOLUME, trade_intent)
+    window = getWindow(Indicator.VOLUME, trade_intent, ticker)
     volume_data = on_balance_volume(close=data.adjclose, volume=data.volume)
 
     if volume_data.isnull:
@@ -284,31 +271,17 @@ def getSMA(window, data):
     return sma
 
 
-def analyseSMA(trade_intent, data):
+def analyseSMA(trade_intent, data, ticker):
     """
     SMA analysis of the provided asset based on provided timeframe.\n
     :param trade_intent: (TradeIntent) determines whether we are short/long/hold analysing.
     :param data: (data) historical data of stock.
+    :param ticker: (str) name of stock
     :return: (float) the confidence in the provided asset
     """
-    window = getWindow(Indicator.SMA, trade_intent)
+    window = getWindow(Indicator.SMA, trade_intent, ticker)
     sma = getSMA(window, data.adjclose)
     return sma
-
-
-def analyseBollingerBands(trade_intent, data):
-    """
-    Bollinger Band analysis of the provided asset based on provided timeframe.\n
-    :param trade_intent: (TradeIntent) determines whether we are short/long/hold analysing.
-    :param data: (data) historical data of stock.
-    :return: (float) the confidence in the provided asset
-    """
-    window = getWindow(Indicator.BOLLINGER, trade_intent)
-    std = data.adjclose.rolling(window=window).std()
-    sma = getSMA(window, data.adjclose)
-    upper_bb = sma + std * 2
-    lower_bb = sma - std * 2
-    return upper_bb, lower_bb
 
 
 def analyse(stock_name, trade_intent, indicator):

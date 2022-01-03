@@ -9,3 +9,6 @@ class TradeIntent(enum.Enum):
     LONG_HOLD = 1
     LONG_TRADE = 2
     SHORT_TRADE = 3
+
+    def toString(self):
+        return self.name
