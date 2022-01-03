@@ -1,5 +1,8 @@
 # Stock Trading with (not yet) Machine Learning
 
+[![GitHub repo size](https://img.shields.io/github/repo-size/TheGigaChad/python-trader)](https://img.shields.io/github/repo-size/TheGigaChad/python-trader)
+
+
 ## Overview
 A stock trading bot that uses (no) machine learning to make price predictions.  It will manage your portfolio and 
 attempt to find new options to purchase.
