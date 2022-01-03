@@ -54,12 +54,12 @@ def getWindow(indicator, trade_intent, ticker, file="algo_windows.json"):
         if item["NAME"] == ticker:
             if indicator == Indicator.MACD:
                 macd_indicators = ["FAST", "SLOW", "SIG"]
-                macd_fast = indicator.toString() + "_" + macd_indicators[0] + "_" + trade_intent.toString()
-                macd_slow = indicator.toString() + "_" + macd_indicators[1] + "_" + trade_intent.toString()
-                macd_sig = indicator.toString() + "_" + macd_indicators[2] + "_" + trade_intent.toString()
+                macd_fast = indicator.toShortString() + "_" + macd_indicators[0] + "_" + trade_intent.toString()
+                macd_slow = indicator.toShortString() + "_" + macd_indicators[1] + "_" + trade_intent.toString()
+                macd_sig = indicator.toShortString() + "_" + macd_indicators[2] + "_" + trade_intent.toString()
                 return item[macd_fast], item[macd_slow], item[macd_sig]
             else:
-                sql_column_name = indicator.toString() + "_" + trade_intent.toString()
+                sql_column_name = indicator.toShortString() + "_" + trade_intent.toString()
                 return item[sql_column_name]
 
     print(f"getWindow could not determine the Trade Intent {trade_intent} for the indicator {indicator}")
@@ -209,16 +209,16 @@ def analyseBollinger(trade_intent, data, ticker):
     return 1.0
 
 
-def getMACD(trade_intent, data, ticker):
+def getMACD(window_fast, window_slow, window_sig, data):
     """
     MACD analysis of the provided asset based on provided timeframe.\n
-    :param trade_intent: (TradeIntent) determines whether we are short/long/hold analysing.
+    :param window_fast: (int) fast moving window
+    :param window_slow: (int) slow moving window
+    :param window_sig: (int) signal window
     :param data: (pandas.Dataframe) stock data
-    :param ticker: (str) name of stock
-    :return: (float) the confidence in the provided asset
+    :return: (pandas.Series) MACD data
     """
-    window_fast, window_slow, signal = getWindow(Indicator.MACD, trade_intent, ticker)
-    macd_data = pta.macd(close=data['Adj Close'], fast=window_fast, slow=window_slow, signal=signal, append=True)
+    macd_data = pta.macd(close=data['Adj Close'], fast=window_fast, slow=window_slow, signal=window_sig, append=True)
     return macd_data
 
 
@@ -229,7 +229,8 @@ def analyseMACD(trade_intent, data):
     :param data: (pandas.Dataframe) stock data
     :return: (float) the confidence in the provided asset
     """
-    macd_data = getMACD(trade_intent, data)
+    window_fast, window_slow, window_sig = getWindow(Indicator.MACD, trade_intent)
+    macd_data = getMACD(window_fast, window_slow, window_sig, data)
     return 1.0
 
 
