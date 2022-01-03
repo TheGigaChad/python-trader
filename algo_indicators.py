@@ -12,3 +12,6 @@ class Indicator(str, enum.Enum):
     MACD = 'MACD'
     VOLUME = 'VOLUME'
     SMA = 'SMA'
+
+    def toString(self):
+        return self.name
