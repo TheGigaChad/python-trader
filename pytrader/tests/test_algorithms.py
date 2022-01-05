@@ -4,7 +4,7 @@ from pytrader.marketData import marketData
 from pytrader.algo.algo_indicators import Indicator
 
 stock_name = "TSLA"
-stock_data = pd.read_csv("TSLA_historical_data.csv")
+stock_data = pd.read_csv("./TSLA_historical_data.csv")
 
 
 def test_RSI():
