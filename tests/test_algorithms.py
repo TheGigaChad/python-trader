@@ -1,8 +1,7 @@
 import pandas as pd
-
-from algo_tradeIntent import TradeIntent
-import marketData
-from algo_indicators import Indicator
+from algo.algo_tradeIntent import TradeIntent
+from marketData import marketData
+from algo.algo_indicators import Indicator
 
 stock_name = "TSLA"
 stock_data = pd.read_csv("TSLA_historical_data.csv")
@@ -11,8 +10,8 @@ stock_data = pd.read_csv("TSLA_historical_data.csv")
 def test_RSI():
     trade_intent = TradeIntent.SHORT_TRADE
     indicator = Indicator.RSI
-    window = marketData.getWindow(indicator, trade_intent, stock_name)
-    rsi_data = marketData.getRSI(window, stock_data).rsi().dropna()
+    window = marketData.getWindow(indicator, trade_intent, stock_name, 'test_algo_windows.json')
+    rsi_data = marketData.getRSI(window, stock_data).dropna()
     first_point = rsi_data.iloc[0]
     last_point = rsi_data.iloc[-1]
     assert first_point == 69.87030283020084 and last_point == 56.124583112389
@@ -21,7 +20,7 @@ def test_RSI():
 def test_Bollinger():
     trade_intent = TradeIntent.SHORT_TRADE
     indicator = Indicator.BOLLINGER
-    window = marketData.getWindow(indicator, trade_intent)
+    window = marketData.getWindow(indicator, trade_intent, stock_name, 'test_algo_windows.json')
     bollinger_data = marketData.appendBollinger(window, stock_data).dropna()
     first_point = bollinger_data.iloc[0]
     last_point = bollinger_data.iloc[-1]
@@ -32,7 +31,7 @@ def test_Bollinger():
 def test_SMA():
     trade_intent = TradeIntent.SHORT_TRADE
     indicator = Indicator.SMA
-    window = marketData.getWindow(indicator, trade_intent, stock_name)
+    window = marketData.getWindow(indicator, trade_intent, stock_name, 'test_algo_windows.json')
     sma_data = marketData.getSMA(window, stock_data.loc[:, 'Adj Close']).dropna()
     first_point = sma_data.iloc[0]
     last_point = sma_data.iloc[-1]
@@ -41,7 +40,10 @@ def test_SMA():
 
 def test_MACD():
     trade_intent = TradeIntent.SHORT_TRADE
-    macd_data = marketData.getMACD(trade_intent, stock_data).dropna()
+    indicator = Indicator.MACD
+    window_fast, window_slow, window_sig = marketData.getWindow(indicator, trade_intent, stock_name,
+                                                                'test_algo_windows.json')
+    macd_data = marketData.getMACD(window_fast, window_slow, window_sig, stock_data).dropna()
     first_point = macd_data.iloc[0]
     last_point = macd_data.iloc[-1]
     assert first_point['MACD_12_26_9'] == -13.623186637203617 and first_point['MACDh_12_26_9'] == -16.268799961263742 \
@@ -52,7 +54,7 @@ def test_MACD():
 def test_EMA():
     trade_intent = TradeIntent.SHORT_TRADE
     indicator = Indicator.EMA
-    window = marketData.getWindow(indicator, trade_intent, stock_name)
+    window = marketData.getWindow(indicator, trade_intent, stock_name, 'test_algo_windows.json')
     macd_data = marketData.getEMA(window, stock_data).dropna()
     first_point = macd_data.iloc[0]
     last_point = macd_data.iloc[-1]

@@ -1,9 +1,10 @@
 import json
 
 import mysql.connector as mysql
-import marketData_SQL
+from marketData.marketData_SQL import getSQLWindowDataAsJson, updateWindowData
 
-from algo_config import SQL_SERVER_HOST, SQL_SERVER_DATABASE, SQL_SERVER_USER, SQL_SERVER_PASSWORD, \
+
+from config import SQL_SERVER_HOST, SQL_SERVER_DATABASE, SQL_SERVER_USER, SQL_SERVER_PASSWORD, \
     SQL_SERVER_WINDOWS_TABLE
 
 
@@ -24,7 +25,7 @@ def test_sql_get_algo_windows():
     assert len(response) > 0
 
 
-def is_json(item):
+def is_json(item) -> bool:
     try:
         json_object = json.dumps(item)
     except ValueError as e:
@@ -33,7 +34,7 @@ def is_json(item):
 
 
 def test_sql_window_data_to_json():
-    json_data = marketData_SQL.getSQLWindowDataAsJson()
+    json_data = getSQLWindowDataAsJson()
     assert is_json(json_data)
 
 
@@ -49,7 +50,7 @@ def test_sql_save_window_data():
         assert len(infile.readlines()) == 0
         infile.close()
 
-    marketData_SQL.updateWindowData(file_name=json_file)
+    updateWindowData(file_name=json_file)
 
     # make sure data is written
     with open(json_file, "r") as infile:
