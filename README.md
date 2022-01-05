@@ -2,8 +2,8 @@
 
 
 <p align="center">
-    <a href="https://github.com/TheGigaChad/python-trader/actions">
-      <img alt="Tests Passing" src="https://github.com/TheGigaChad/python-trader/workflows/Test/badge.svg" />
+    <a href="https://github.com/TheGigaChad/python-trader/actions/workflows/tests.yml">
+      <img alt="Tests Passing" src="https://github.com/TheGigaChad/python-trader/actions/workflows/tests.yml/badge.svg?branch=main" />
     </a>
     <a href="https://codecov.io/gh/TheGigaChad/python-trader">
       <img src="https://codecov.io/gh/TheGigaChad/python-trader/branch/master/graph/badge.svg" />
