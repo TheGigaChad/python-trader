@@ -8,7 +8,7 @@ from subprocess import Popen, PIPE
 import alpaca_trade_api as tradeapi
 import psutil
 
-from config import ALPACA_PAPER_KEY, ALPACA_PAPER_SECRET, ALPACA_PAPER_ADDRESS
+from pytrader.config import ALPACA_PAPER_KEY, ALPACA_PAPER_SECRET, ALPACA_PAPER_ADDRESS
 
 warnings.filterwarnings("ignore")
 

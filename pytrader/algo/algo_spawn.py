@@ -2,14 +2,13 @@ import sys
 import logging
 import datetime
 from algo_main import api
-from config import ALPACA_PAPER_KEY, ALPACA_PAPER_SECRET
+from pytrader.config import ALPACA_PAPER_KEY, ALPACA_PAPER_SECRET
 from algo_stock import Stock
-import enum
 import time
 import random
 import websocket
 import json
-from marketData.marketData import analyse
+from pytrader.marketData.marketData import analyse
 from algo_indicators import Indicator
 from algo_tradeIntent import TradeIntent
 from algo_position import Position

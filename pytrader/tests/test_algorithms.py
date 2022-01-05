@@ -1,7 +1,7 @@
 import pandas as pd
-from algo.algo_tradeIntent import TradeIntent
-from marketData import marketData
-from algo.algo_indicators import Indicator
+from pytrader.algo.algo_tradeIntent import TradeIntent
+from pytrader.marketData import marketData
+from pytrader.algo.algo_indicators import Indicator
 
 stock_name = "TSLA"
 stock_data = pd.read_csv("TSLA_historical_data.csv")

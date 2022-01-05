@@ -1,10 +1,10 @@
 import json
 
 import mysql.connector as mysql
-from marketData.marketData_SQL import getSQLWindowDataAsJson, updateWindowData
+from pytrader.marketData.marketData_SQL import getSQLWindowDataAsJson, updateWindowData
 
 
-from config import SQL_SERVER_HOST, SQL_SERVER_DATABASE, SQL_SERVER_USER, SQL_SERVER_PASSWORD, \
+from pytrader.config import SQL_SERVER_HOST, SQL_SERVER_DATABASE, SQL_SERVER_USER, SQL_SERVER_PASSWORD, \
     SQL_SERVER_WINDOWS_TABLE
 
 
