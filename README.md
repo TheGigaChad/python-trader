@@ -17,7 +17,7 @@ attempt to find new options to purchase.
 ## Documentation
 When I create a website, we can add it here I guess.
 
-[Blog Post]()
+[Blog Post](https://bigguy.dev/)
 
 ## Start guide
 1. Clone the repo
