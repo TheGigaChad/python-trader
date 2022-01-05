@@ -12,19 +12,9 @@ import json
 from marketData.marketData import analyse
 from algo_indicators import Indicator
 from algo_tradeIntent import TradeIntent
+from algo_position import Position
 
 logging.basicConfig(filename='algo.log', format='%(name)s - %(levelname)s - %(message)s')
-
-
-class Position(enum.Enum):
-    """
-    The position of the stock relative to our portfolio.
-    """
-    UNKNOWN = 0
-    OWNED = 1
-    UNOWNED = 2
-    TRADING = 3
-
 
 
 def return_trade_rating():
@@ -180,9 +170,9 @@ def requestAllowance(stock, confidence):
                                                       stock))
 
 
-def getInitialPosition(ticker_name):
+def getInitialPosition(ticker_name: str) -> Position:
     """
-    Determines whether we own the stock or whether we have an active trade and returns the :class:`Position` \n
+    Determines whether we own the stock or whether we have an active trade and returns the position type \n
     :param ticker_name: name of stock
     :return: the position
     """
@@ -203,40 +193,13 @@ def getInitialPosition(ticker_name):
     return Position.UNOWNED
 
 
-def getTradeIntent():
+def getTradeIntent() -> TradeIntent:
+    # TODO - this needs to be in an SQL table
     """
-    Determines the :class:`TradeIntent` \n
+    Determines the trade intent type \n
     :return: trade intent
     """
     return TradeIntent.SHORT_TRADE
-
-
-def getInterval(trade_intent):
-    """
-    Determines the interval based on the :class:`TimeIntent` in seconds. \n
-    :param trade_intent: (TradeIntent) enum
-    :return: time in seconds
-    """
-    if trade_intent == TradeIntent.SHORT_TRADE:
-        return 10
-    elif trade_intent == TradeIntent.LONG_TRADE:
-        return 30000
-    else:
-        return 0
-
-
-def getWindow(trade_intent):
-    """
-    Determines the interval based on the :class:`TimeIntent` as a period. \n
-    :param trade_intent: (TradeIntent) enum
-    :return: (string) time period
-    """
-    if trade_intent == TradeIntent.SHORT_TRADE:
-        return "1m"
-    elif trade_intent == TradeIntent.LONG_TRADE:
-        return "1h"
-    else:
-        return "1m"
 
 
 def on_open(ws):
@@ -266,12 +229,11 @@ def on_message(ws, message):
     on_message callback from :class:`websocket.WebSocketApp`. \n
     :param ws: websocket
     :param message: message
-    :param trade_id: (int) id of relevant trade
     """
     print(message)
 
 
-def listenForTradeUpdate(trade_id, name, qty, id):
+def listenForTradeUpdate(name, qty, id):
     """
     Once a buy or sell request has been made, we listen to make sure it is successful. \n
     :param trade_id: (string) id of the relevant trade
@@ -306,13 +268,13 @@ def getStockPrice(ticker_name):
         print(e)
 
 
-def interpretMarket(stock_name, trade_intent, indicator_list):
+def interpretMarket(stock_name: str, trade_intent: TradeIntent, indicator_list: list[Indicator]) -> float:
     """
     This is the container for the market interpretation. \n
-    :param stock_name: (string) name of asset.
-    :param trade_intent: (TradeIntent) determines whether we are short/long/hold analysing.
+    :param stock_name: name of asset.
+    :param trade_intent: determines whether we are short/long/hold analysing.
     :param indicator_list: list of indicators we want to use for our interpretation
-    :return: confidence value [-1,1] that determines what to do.
+    :return: confidence value that determines what to do.
     """
     logging.warning(
         '{} : {} started successfully'.format(datetime.datetime.now().strftime("%x %X"), stock_name))
@@ -324,16 +286,16 @@ def interpretMarket(stock_name, trade_intent, indicator_list):
     return confidence
 
 
-def run(stock):
+def run(stock: Stock):
     """
-    main method for each subprocess based on  :class:`Stock` object. \n
+    main method for each subprocess based on  stock object. \n
     :param stock: Stock object
     """
     i = 0
     j = random.randrange(1, 4)
     while True:
         try:
-            confidence = interpretMarket(stock.ticker_name, getWindow(stock.trade_intent),
+            confidence = interpretMarket(stock.ticker_name, stock.trade_intent,
                                          stock.indicator_list)
 
             if stock.lower_confidence_giveup <= confidence <= stock.upper_confidence_giveup or i > j:
@@ -348,14 +310,14 @@ def run(stock):
                 sell(stock, 1)
                 pass
             i = i + 1
-            time.sleep(stock.interval)
+            time.sleep(10000)
         except Exception as e:
             logging.warning(
                 '{} : {} subprocess crashed -  {}'.format(datetime.datetime.now().strftime("%x %X"), stock.ticker_name,
                                                           e))
 
 
-def quitting(name):
+def quitting(name: str):
     """
     Tidy up works on the quitting of subprocess. \n
     :param name:  ticker name
@@ -375,9 +337,8 @@ def main():
     ticker_name = getTickerName()
     indicator_list = [Indicator.MACD, Indicator.RSI]
     trade_intent = getTradeIntent()
-    interval = getInterval(trade_intent)
     position = getInitialPosition(ticker_name)
-    stock = Stock(ticker_name, indicator_list, trade_intent, interval, position)
+    stock = Stock(ticker_name, indicator_list, trade_intent, position)
     if not debug_mode:
         run(stock)
     quitting(stock.ticker_name)

@@ -2,6 +2,7 @@ import datetime
 import enum
 import math
 from datetime import timedelta
+from typing import Union, Tuple, Any, Optional
 
 import numpy as np
 import pandas
@@ -11,6 +12,8 @@ from pytz import timezone
 from ta.momentum import RSIIndicator
 from ta.volume import on_balance_volume
 import pandas_ta as pta
+from algo.algo_tradeIntent import TradeIntent
+from algo.algo_indicators import Indicator
 
 from algo.algo_main import api
 
@@ -21,20 +24,8 @@ RSI_GRADIENT_SCALAR = 1
 RSI_INSTANTANEOUS_SCALAR = 1
 
 
-class Indicator(str, enum.Enum):
-    """
-    Enum that distinguishes the type of indicator (RSI, EMA...).
-    """
-    UNKNOWN = 'UNKNOWN'
-    RSI = 'RSI'
-    EMA = 'EMA'
-    BOLLINGER = 'BOLLINGER'
-    MACD = 'MACD'
-    VOLUME = 'VOLUME'
-    SMA = 'SMA'
-
-
-def getWindow(indicator, trade_intent, ticker, file="algo_windows.json"):
+def getWindow(indicator: Indicator, trade_intent: TradeIntent, ticker: str, file: Optional[str] = "algo_windows.json") \
+        -> Union[Union[tuple[int, int, int], int], int]:
     """
     gets the window for analysis. \n
     :param indicator: (Indicator) type of indicator used for analysis.
@@ -64,7 +55,6 @@ def getWindow(indicator, trade_intent, ticker, file="algo_windows.json"):
     return 0
 
 
-
 def get_data_bars(symbols, rate, slow, fast):
     data = api.get_barset(symbols, rate, limit=20).df
     for x in symbols:
@@ -85,11 +75,11 @@ def get_signal_bars(symbol_list, rate, ema_slow, ema_fast):
     return signals
 
 
-def time_to_open(current_time):
+def time_to_open(current_time: datetime) -> float:
     """
-    Returns how long until the markets are open, this is useful only for STOCKS. \n
-    :param current_time: (time) current time.
-    :return: (int) seconds until the markets open.
+    Returns how long until the markets are open, this is not useful for crypto and other 24/7 markets. \n
+    :param current_time: current time.
+    :return: seconds until the markets open.
     """
     if current_time.weekday() <= 4:
         d = (current_time + timedelta(days=1)).date()
@@ -101,30 +91,30 @@ def time_to_open(current_time):
     return seconds
 
 
-def getRSI(window, data):
+def getRSI(window: int, data: pandas.DataFrame) -> pandas.Series:
     """
     RSI data of the provided asset based on provided timeframe.\n
-    :param window: (int) time frame of analysis
-    :param data: (obj) yahoo-fin stock object relating to stock.
-    :return: (pandas.Series) RSI data
+    :param window: time frame of analysis
+    :param data: yahoo-fin stock object relating to stock.
+    :return: RSI data
     """
-    return RSIIndicator(close=data['Adj Close'], window=window)
+    return RSIIndicator(close=data['Adj Close'], window=window).rsi()
 
 
-def analyseRSI(trade_intent, data, ticker):
+def analyseRSI(trade_intent: TradeIntent, data: pandas.DataFrame, ticker: str) -> float:
     """
     RSI analysis of the provided asset based on provided timeframe.\n
-    :param trade_intent: (TradeIntent) determines whether we are short/long/hold analysing.
-    :param data: (pandas.DataFrame) yahoo-fin stock object relating to stock.
-    :param ticker: (str) name of stock
-    :return: (float) the confidence in the provided asset
+    :param trade_intent: determines whether we are short/long/hold analysing.
+    :param data: stock data.
+    :param ticker: name of stock.
+    :return: the confidence in the provided asset.
     """
     window = getWindow(Indicator.RSI, trade_intent, ticker)
     rsi_data = getRSI(window, data)
 
     if rsi_data is None:
         print("analyseRSI - momentum RSI data is none")
-        return 0
+        return 0.0
 
     # Scale the RSI to be between -3,3 to fit tanh scale, then return tanh to go a value between -1,1
     rsi_scaled = (0.06 * rsi_data.rsi()) - 3
@@ -139,40 +129,43 @@ def analyseRSI(trade_intent, data, ticker):
     slope, intercept = np.polyfit(data_x, data_y, 1)
 
     # rescale gradient, accommodate for inverse in the same way rsi value is
-    slope_scaled = (trade_intent / 100) * slope
+    slope_scaled = (window / 100) * slope
     slope_tanh = math.tanh(slope_scaled) * -1
 
     rsi_out = (slope_tanh * RSI_GRADIENT_SCALAR) + (rsi_tanh * RSI_INSTANTANEOUS_SCALAR) / 2
     return rsi_out
 
 
-def getEMA(window, data):
+def getEMA(window: int, data: pandas.DataFrame) -> pandas.Series:
     """
     EMA data of the provided asset based on provided timeframe.\n
-    :param window: (int) time frame of analysis
-    :param data: (pandas.DataFrame) yahoo-fin stock object relating to stock.
+    :param window: time frame of analysis
+    :param data: stock data
     :return: (pandas.Series) EMA data
     """
     ema_data = pta.ema(close=data['Adj Close'], length=window)
     return ema_data
 
 
-def analyseEMA(trade_intent, data, ticker):
+def analyseEMA(trade_intent: TradeIntent, data: pandas.DataFrame, ticker: str) -> float:
     """
     EMA analysis of the provided asset based on provided timeframe.\n
-    :param trade_intent: (TradeIntent) determines whether we are short/long/hold analysing.
-    :param data: (pandas.DataFrame) data set
-    :param ticker: (str) name of stock
-    :return: (float) the confidence in the provided asset
+    :param trade_intent: determines whether we are short/long/hold analysing.
+    :param data: data set
+    :param ticker: name of stock
+    :return: the confidence in the provided asset
     """
     window = getWindow(Indicator.EMA, trade_intent, ticker)
     ema_data = getEMA(window, data)
     return 1.0
 
 
-def bollingerBounds(data, sma, window):
+def bollingerBounds(data: pandas.DataFrame, sma: pandas.Series, window: int) -> tuple[Any, Any]:
     """"
-
+    Determines the upper and lower bounds for the bollinger bands
+    :param data: stock data
+    :param sma: simple moving average data
+    :param window: time frame of analysis
     """
     std = data.rolling(window=window).std()
     upper_bb = sma + std * 2
@@ -180,12 +173,12 @@ def bollingerBounds(data, sma, window):
     return upper_bb, lower_bb
 
 
-def appendBollinger(window, data):
+def appendBollinger(window: int, data: pandas.DataFrame) -> pandas.DataFrame:
     """
     Appends Bollinger data to dataframe.
-    :param window: (int) time frame of analysis
-    :param data: (obj) yahoo-fin stock object relating to stock.
-    :return: (dataframe) updated data frame
+    :param window: time frame of analysis
+    :param data: yahoo-fin stock object relating to stock.
+    :return: updated data frame
     """
     sma_name = "sma_" + str(window)
     data[sma_name] = getSMA(window, data)
@@ -193,59 +186,58 @@ def appendBollinger(window, data):
     return data
 
 
-def analyseBollinger(trade_intent, data, ticker):
+def analyseBollinger(trade_intent: TradeIntent, data: pandas.DataFrame, ticker: str) -> float:
     """
     Bollinger analysis of the provided asset based on provided timeframe.\n
-    :param trade_intent: (TradeIntent) determines whether we are short/long/hold analysing.
-    :param data: (data) historical data of stock
-    :param ticker: (str) name of stock
-    :return: (float) the confidence in the provided asset
+    :param trade_intent: determines whether we are short/long/hold analysing.
+    :param data: stock data
+    :param ticker: name of stock
+    :return: the confidence in the provided asset
     """
     window = getWindow(Indicator.BOLLINGER, trade_intent, ticker)
     bollinger_data = appendBollinger(window, data)
-
     return 1.0
 
 
-def getMACD(window_fast, window_slow, window_sig, data):
+def getMACD(window_fast: int, window_slow: int, window_sig: int, data: pandas.DataFrame) -> pandas.DataFrame:
     """
     MACD analysis of the provided asset based on provided timeframe.\n
-    :param window_fast: (int) fast moving window
-    :param window_slow: (int) slow moving window
-    :param window_sig: (int) signal window
-    :param data: (pandas.Dataframe) stock data
-    :return: (pandas.Series) MACD data
+    :param window_fast: fast moving window
+    :param window_slow: slow moving window
+    :param window_sig: signal window
+    :param data: stock data
+    :return: MACD data
     """
     macd_data = pta.macd(close=data['Adj Close'], fast=window_fast, slow=window_slow, signal=window_sig, append=True)
     return macd_data
 
 
-def analyseMACD(trade_intent, data):
+def analyseMACD(trade_intent: TradeIntent, data: pandas.DataFrame) -> float:
     """
     MACD analysis of the provided asset based on provided timeframe.\n
-    :param trade_intent: (TradeIntent) determines whether we are short/long/hold analysing.
-    :param data: (pandas.Dataframe) stock data
-    :return: (float) the confidence in the provided asset
+    :param trade_intent: determines whether we are short/long/hold analysing.
+    :param data: stock data
+    :return: the confidence in the provided asset
     """
     window_fast, window_slow, window_sig = getWindow(Indicator.MACD, trade_intent)
     macd_data = getMACD(window_fast, window_slow, window_sig, data)
     return 1.0
 
 
-def analyseVolume(trade_intent, data, ticker):
+def analyseVolume(trade_intent: TradeIntent, data: pandas.DataFrame, ticker: str) -> float:
     """
     Volume analysis of the provided asset based on provided timeframe.\n
-    :param trade_intent: (TradeIntent) determines whether we are short/long/hold analysing.
-    :param data: (obj) yahoo-fin stock object relating to stock.
-    :param ticker: (str) name of stock
-    :return: (float) the confidence in the provided asset
+    :param trade_intent: determines whether we are short/long/hold analysing.
+    :param data: stock data
+    :param ticker: name of stock
+    :return: the confidence in the provided asset
     """
     window = getWindow(Indicator.VOLUME, trade_intent, ticker)
     volume_data = on_balance_volume(close=data.adjclose, volume=data.volume)
 
     if volume_data.isnull:
         print("analyseRSI - momentum RSI data is null")
-        return 0
+        return 0.0
 
     volume_mean = volume_data.mean()
     volume_current = volume_data.last()
@@ -257,12 +249,12 @@ def analyseVolume(trade_intent, data, ticker):
     return vol_tanh
 
 
-def getSMA(window, data):
+def getSMA(window: int, data: pandas.DataFrame) -> pandas.Series:
     """
     Simple Moving Average for given window and data.\n
-    :param window: (int) interval window.
-    :param data: (data) historical data of stock.
-    :return: (array) Simple Moving Average Array
+    :param window: interval window.
+    :param data: historical data of stock.
+    :return: Simple Moving Average Array
     """
     if isinstance(data, pandas.DataFrame):
         data = data.loc[:, 'Adj Close']
@@ -270,50 +262,43 @@ def getSMA(window, data):
     return sma
 
 
-def analyseSMA(trade_intent, data, ticker):
+def analyseSMA(trade_intent: TradeIntent, data: pandas.DataFrame, ticker: str) -> float:
     """
     SMA analysis of the provided asset based on provided timeframe.\n
-    :param trade_intent: (TradeIntent) determines whether we are short/long/hold analysing.
-    :param data: (data) historical data of stock.
-    :param ticker: (str) name of stock
-    :return: (float) the confidence in the provided asset
+    :param trade_intent: determines whether we are short/long/hold analysing.
+    :param data: stock data
+    :param ticker: name of stock
+    :return: the confidence in the provided asset
     """
     window = getWindow(Indicator.SMA, trade_intent, ticker)
     sma = getSMA(window, data.adjclose)
-    return sma
+    return 1.0
 
 
-def analyse(stock_name, trade_intent, indicator):
+def analyse(stock_name: str, trade_intent: TradeIntent, indicator: Indicator) -> float:
     """
     TODO - feed output into ML algorithm. \n
     ------\n
     Simple framework that connects to the corresponding indicator analysis
-    :class:`Indicator` type. \n
-    :param stock_name: (str) name of asset.
-    :param trade_intent: (TradeIntent) determines whether we are short/long/hold analysing.
-    :param indicator: (enum) indicator name.
-    :return: (float) confidence of the provided indicator analysis [-1,1] for whether it will increase.
+    :param stock_name: name of asset.
+    :param trade_intent: determines whether we are short/long/hold analysing.
+    :param indicator: indicator name.
+    :return: confidence of the provided indicator analysis [-1,1] for whether it will increase.
     """
     data = si.get_data(str(stock_name))
 
     if indicator == Indicator.RSI:
-        # return analyseRSI(trade_intent, data)
-        return 1
+        return analyseRSI(trade_intent, data)
     elif indicator == Indicator.EMA:
-        # return analyseEMA(trade_intent, data)
-        return 1
+        return analyseEMA(trade_intent, data)
     elif indicator == Indicator.BOLLINGER:
-        # return analyseBollinger(trade_intent, data)
-        return 1
+        return analyseBollinger(trade_intent, data)
     elif indicator == Indicator.MACD:
-        # return analyseMACD(trade_intent, data)
-        return 1
+        return analyseMACD(trade_intent, data)
     elif indicator == Indicator.VOLUME:
-        # return analyseVolume(trade_intent, data)
-        return 1
+        return analyseVolume(trade_intent, data)
     elif indicator == Indicator.SMA:
-        # return analyseSMA(trade_intent, data)
-        return 1
+        return analyseSMA(trade_intent, data)
 
     else:
         print(f"{indicator} is not a valid  or supported Indicator type.")

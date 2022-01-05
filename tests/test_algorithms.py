@@ -11,7 +11,7 @@ def test_RSI():
     trade_intent = TradeIntent.SHORT_TRADE
     indicator = Indicator.RSI
     window = marketData.getWindow(indicator, trade_intent, stock_name, 'test_algo_windows.json')
-    rsi_data = marketData.getRSI(window, stock_data).rsi().dropna()
+    rsi_data = marketData.getRSI(window, stock_data).dropna()
     first_point = rsi_data.iloc[0]
     last_point = rsi_data.iloc[-1]
     assert first_point == 69.87030283020084 and last_point == 56.124583112389

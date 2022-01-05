@@ -16,7 +16,7 @@ class Indicator(str, enum.Enum):
     def toString(self):
         return self.name
 
-    def toShortString(self):
+    def toShortString(self) -> str:
         if self.name == self.UNKNOWN.toString():
             return "UNKNOWN"
         if self.name == self.RSI.toString():

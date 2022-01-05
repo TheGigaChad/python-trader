@@ -9,6 +9,7 @@ load_dotenv(dotenv_path)
 ALPACA_PAPER_KEY = os.environ.get("ALPACA_PAPER_KEY")
 ALPACA_PAPER_SECRET = os.environ.get("ALPACA_PAPER_SECRET")
 ALPACA_PAPER_ADDRESS = os.environ.get("ALPACA_PAPER_ADDRESS")
+ALPACA_PAPER_ACCOUNT_NUMBER = os.environ.get("ALPACA_PAPER_ACCOUNT_NUMBER")
 
 # SQL
 SQL_SERVER_HOST = os.environ.get("SQL_SERVER_HOST")

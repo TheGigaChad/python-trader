@@ -1,13 +1,18 @@
 import mysql.connector as mysql
 import json
 
+from typing import Optional
+
 from config import SQL_SERVER_HOST, SQL_SERVER_DATABASE, SQL_SERVER_USER, SQL_SERVER_PASSWORD, \
     SQL_SERVER_WINDOWS_TABLE
 
 
-def SQLToJson(sql_response, column_names):
+def SQLToJson(sql_response: list, column_names: list) -> json:
     """
     Converts SQL responses to JSON format
+    :param sql_response: response data
+    :param column_names: names of columns of table
+    :return: Json string of data
     """
     sql_data_list = []
     for row in sql_response:
@@ -18,11 +23,11 @@ def SQLToJson(sql_response, column_names):
     return json.dumps(sql_data_list, indent=1)
 
 
-def getSQLWindowDataAsJson(ticker_name="%"):
+def getSQLWindowDataAsJson(ticker_name: Optional[str] = "%") -> json:
     """
     Returns the windows used for analysis as a JSON object. \n
-    :param ticker_name: (str) name of specific ticker you want data for, else will return all.
-    :return: (JSON) window data for all
+    :param ticker_name: name of specific ticker you want data for, else will return all.
+    :return: window data for all
     """
     db_connection = mysql.connect(host=SQL_SERVER_HOST, database=SQL_SERVER_DATABASE, user=SQL_SERVER_USER,
                                   password=SQL_SERVER_PASSWORD)
@@ -35,7 +40,7 @@ def getSQLWindowDataAsJson(ticker_name="%"):
     return SQLToJson(response, field_names)
 
 
-def updateWindowData(file_name="algo_windows.json"):
+def updateWindowData(file_name: Optional[str] = "algo_windows.json"):
     """
     Updates the file with JSON data
     :param file_name: (str) overrides the input json file to write data to
