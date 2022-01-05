@@ -22,8 +22,7 @@ RSI_GRADIENT_SCALAR = 1
 RSI_INSTANTANEOUS_SCALAR = 1
 
 
-def getWindow(indicator: Indicator, trade_intent: TradeIntent, ticker: str, file: Optional[str] = "algo_windows.json") \
-        -> Union[Union[tuple[int, int, int], int], int]:
+def getWindow(indicator: Indicator, trade_intent: TradeIntent, ticker: str, file: Optional[str] = "algo_windows.json"):
     """
     gets the window for analysis. \n
     :param indicator: (Indicator) type of indicator used for analysis.
@@ -158,7 +157,7 @@ def analyseEMA(trade_intent: TradeIntent, data: pandas.DataFrame, ticker: str) -
     return 1.0
 
 
-def bollingerBounds(data: pandas.DataFrame, sma: pandas.Series, window: int) -> tuple[Any, Any]:
+def bollingerBounds(data: pandas.DataFrame, sma: pandas.Series, window: int):
     """"
     Determines the upper and lower bounds for the bollinger bands
     :param data: stock data

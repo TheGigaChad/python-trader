@@ -1,10 +1,14 @@
 import pandas as pd
+
 from pytrader.algo.algo_tradeIntent import TradeIntent
 from pytrader.marketData import marketData
 from pytrader.algo.algo_indicators import Indicator
+from pathlib import Path
 
+THIS_DIR = Path(__file__).parent
+my_data_path = THIS_DIR / 'TSLA_historical_data.csv'
+stock_data = pd.read_csv(my_data_path)
 stock_name = "TSLA"
-stock_data = pd.read_csv("TSLA_historical_data.csv")
 stock_json = 'test_algo_windows.json'
 
 
