@@ -1,8 +1,7 @@
 import datetime
-import enum
 import math
 from datetime import timedelta
-from typing import Union, Tuple, Any, Optional
+from typing import Union, Any, Optional
 
 import numpy as np
 import pandas
@@ -12,10 +11,9 @@ from pytz import timezone
 from ta.momentum import RSIIndicator
 from ta.volume import on_balance_volume
 import pandas_ta as pta
-from algo.algo_tradeIntent import TradeIntent
-from algo.algo_indicators import Indicator
-
-from algo.algo_main import api
+from pytrader.algo.algo_tradeIntent import TradeIntent
+from pytrader.algo.algo_indicators import Indicator
+from pytrader.algo.algo_main import api
 
 tz = timezone('EST')
 

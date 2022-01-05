@@ -129,4 +129,4 @@ dmypy.json
 .pyre/
 
 #random play files
-playground.py
+pytrader/playground.py
