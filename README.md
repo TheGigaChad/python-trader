@@ -1,6 +1,24 @@
 # Stock Trading with (not yet) Machine Learning
 
-[![GitHub repo size](https://img.shields.io/github/repo-size/TheGigaChad/python-trader)](https://img.shields.io/github/repo-size/TheGigaChad/python-trader)
+
+<p align="center">
+    <a href="https://github.com/TheGigaChad/python-trader/actions">
+      <img alt="Tests Passing" src="https://github.com/TheGigaChad/python-trader/workflows/Test/badge.svg" />
+    </a>
+    <a href="https://codecov.io/gh/TheGigaChad/python-trader">
+      <img src="https://codecov.io/gh/TheGigaChad/python-trader/branch/master/graph/badge.svg" />
+    </a>
+    <a href="https://github.com/TheGigaChad/python-trader/issues">
+      <img alt="Issues" src="https://img.shields.io/github/issues/TheGigaChad/python-trader?color=0088ff" />
+    </a>
+    <a href="https://github.com/TheGigaChad/python-trader/pulls">
+      <img alt="GitHub pull requests" src="https://img.shields.io/github/issues-pr/TheGigaChad/python-trader?color=0088ff" />
+    </a>
+    <a href="https://img.shields.io/github/repo-size/TheGigaChad/python-trader">
+      <img alt="GitHub repo size" src="https://img.shields.io/github/repo-size/TheGigaChad/python-trader" />
+    </a>
+    <br />
+  </p>
 
 
 ## Overview
