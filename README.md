@@ -1,6 +1,5 @@
 # Stock Trading with (not yet) Machine Learning
 
-[![GitHub repo size](https://img.shields.io/github/repo-size/TheGigaChad/python-trader)](https://img.shields.io/github/repo-size/TheGigaChad/python-trader)
 
 <p align="center">
     <a href="https://github.com/TheGigaChad/python-trader/actions">
@@ -19,7 +18,6 @@
       <img alt="GitHub repo size" src="https://img.shields.io/github/repo-size/TheGigaChad/python-trader" />
     </a>
     <br />
-
   </p>
 
 
