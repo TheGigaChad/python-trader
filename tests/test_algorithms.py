@@ -1,8 +1,7 @@
 import pandas as pd
-
-from algo_tradeIntent import TradeIntent
-import marketData
-from algo_indicators import Indicator
+from algo.algo_tradeIntent import TradeIntent
+from marketData import marketData
+from algo.algo_indicators import Indicator
 
 stock_name = "TSLA"
 stock_data = pd.read_csv("TSLA_historical_data.csv")
@@ -42,7 +41,8 @@ def test_SMA():
 def test_MACD():
     trade_intent = TradeIntent.SHORT_TRADE
     indicator = Indicator.MACD
-    window_fast, window_slow, window_sig = marketData.getWindow(indicator, trade_intent, stock_name, 'test_algo_windows.json')
+    window_fast, window_slow, window_sig = marketData.getWindow(indicator, trade_intent, stock_name,
+                                                                'test_algo_windows.json')
     macd_data = marketData.getMACD(window_fast, window_slow, window_sig, stock_data).dropna()
     first_point = macd_data.iloc[0]
     last_point = macd_data.iloc[-1]

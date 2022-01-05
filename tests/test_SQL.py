@@ -1,9 +1,10 @@
 import json
 
 import mysql.connector as mysql
-import marketData_SQL
+from marketData import marketData_SQL
 
-from algo_config import SQL_SERVER_HOST, SQL_SERVER_DATABASE, SQL_SERVER_USER, SQL_SERVER_PASSWORD, \
+
+from config import SQL_SERVER_HOST, SQL_SERVER_DATABASE, SQL_SERVER_USER, SQL_SERVER_PASSWORD, \
     SQL_SERVER_WINDOWS_TABLE
 
 

@@ -12,9 +12,7 @@ from ta.momentum import RSIIndicator
 from ta.volume import on_balance_volume
 import pandas_ta as pta
 
-from algo_main import api
-from algo_tradeIntent import TradeIntent
-from marketData_SQL import getSQLWindowDataAsJson
+from algo.algo_main import api
 
 tz = timezone('EST')
 

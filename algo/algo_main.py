@@ -8,7 +8,7 @@ from subprocess import Popen, PIPE
 import alpaca_trade_api as tradeapi
 import psutil
 
-from algo_config import ALPACA_PAPER_KEY, ALPACA_PAPER_SECRET
+from config import ALPACA_PAPER_KEY, ALPACA_PAPER_SECRET, ALPACA_PAPER_ADDRESS
 
 warnings.filterwarnings("ignore")
 
@@ -17,7 +17,7 @@ warnings.filterwarnings("ignore")
 # ------------
 # Get your own key from whatever service you want. In this case, I am using
 # the Alpaca paper trading API.
-api = tradeapi.REST(ALPACA_PAPER_KEY, ALPACA_PAPER_SECRET, 'https://paper-api.alpaca.markets')
+api = tradeapi.REST(ALPACA_PAPER_KEY, ALPACA_PAPER_SECRET, ALPACA_PAPER_ADDRESS)
 
 
 # ------------

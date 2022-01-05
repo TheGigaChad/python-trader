@@ -2,18 +2,18 @@ import sys
 import logging
 import datetime
 from algo_main import api
-from algo_config import ALPACA_PAPER_KEY, ALPACA_PAPER_SECRET
+from config import ALPACA_PAPER_KEY, ALPACA_PAPER_SECRET
 from algo_stock import Stock
 import enum
 import time
 import random
 import websocket
 import json
-from marketData import analyse
+from marketData.marketData import analyse
 from algo_indicators import Indicator
 from algo_tradeIntent import TradeIntent
 
-logging.basicConfig(filename='./algo.log', format='%(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(filename='algo.log', format='%(name)s - %(levelname)s - %(message)s')
 
 
 class Position(enum.Enum):
