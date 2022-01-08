@@ -1,38 +1,99 @@
 import json
 from typing import Optional
 
-from exchange import Exchange, ExchangeName, ExchangeType, ExchangeRequestType, ExchangeRequestResponseType
+from pytrader.exchange.exchange import Exchange, ExchangeName, ExchangeType, RequestType, \
+    ResponseType
 from pytrader.common.asset import Asset, AssetType
+from pytrader.common.status import Status
+from pytrader.common.requests import Request
+from pytrader.exchange.exchangeListener import ExchangeListener
+from pytrader.exchange.exchange import ExchangeRequestResponse
 
 
 class ExchangeManager:
     # TODO - we might need a thread-lock here
     """
-    Handles the exchanges and different types of requests etc.  When an asset_thread wants to do something, it should
-    make a request to here.
+    Handles the exchanges and different types of requests etc.  This should be interacted with by the different managers.
     """
     def __init__(self):
+        self.__status = Status.UNKNOWN
+        self.__request_queue: list[Request] = []
         self.__paper_stock_exchange  = Exchange(exchange_type=ExchangeType.PAPER_STOCK, name=ExchangeName.ALPACA_PAPER)
         self.__paper_crypto_exchange = Exchange(exchange_type=ExchangeType.PAPER_CRYPTO, name=ExchangeName.ALPACA_PAPER)
         self.__stock_exchange = Exchange(exchange_type=ExchangeType.STOCK, name=ExchangeName.ALPACA_PAPER)
         self.__crypto_exchange = Exchange(exchange_type=ExchangeType.CRYPTO, name=ExchangeName.ALPACA_PAPER)
+        self.__listener: ExchangeListener = ExchangeListener()
+        self.initialise()
 
-    def request(self, asset: Asset, request_type: ExchangeRequestType, request_params: Optional[json] = None) \
-            -> ExchangeRequestResponseType:
+    @property
+    def paper_stock_exchange(self):
+        return self.__paper_stock_exchange
+
+    @property
+    def paper_crypto_exchange(self):
+        return self.__paper_crypto_exchange
+
+    @property
+    def stock_exchange(self):
+        return self.stock_exchange
+
+    @property
+    def crypto_exchange(self):
+        return self.crypto_exchange
+
+    def __init(self):
+        self.__status = Status.INIT
+
+    def initialise(self):
+        self.__init()
+        self.__paper_stock_exchange.start()
+        self.__paper_crypto_exchange.start()
+        self.__stock_exchange.start()
+        self.__crypto_exchange.start()
+        self.__getStaleRequests()
+        self.__status = Status.RUNNING
+
+    def isRunning(self):
+        return self.__status == Status.RUNNING
+
+    def isIdle(self):
+        return self.__status == Status.IDLE
+
+    def isError(self):
+        return self.__status == Status.ERROR
+
+    def isStopped(self):
+        return self.__status == Status.STOPPED
+
+    def __getStaleRequests(self):
+        """
+        returns all stale requests still sitting in exchanges.
+        """
+        # TODO - search exchange requests for unfulfilled requests and return as a list of Requests
+        self.__request_queue = []
+
+    def request(self, asset: Asset, request_type: RequestType, request_params=None) \
+            -> ResponseType:
         """
         exchange request
         """
         if asset.type == AssetType.PAPER_STOCK:
-            return self.__paper_stock_exchange.request(request_type, request_params)
+            response: ExchangeRequestResponse = self.__paper_stock_exchange.request(asset, request_type, request_params)
+            if response.data is not None:
+                return self.__listener.listen_for(response.data)
+            else:
+                return response.type
         elif asset.type == AssetType.PAPER_CRYPTO:
-            return self.__paper_stock_exchange.request(request_type, request_params)
+            return self.__paper_stock_exchange.request(asset, request_type, request_params)
+        elif asset.type == AssetType.STOCK:
+            return self.__stock_exchange.request(asset, request_type, request_params)
 
     def update(self):
         """
         Call to update data on all exchanges.
         """
-        self.__paper_stock_exchange.request(ExchangeRequestType.UPDATE)
-        self.__paper_crypto_exchange.request(ExchangeRequestType.UPDATE)
+        self.__paper_stock_exchange.request(RequestType.UPDATE)
+        self.__paper_crypto_exchange.request(RequestType.UPDATE)
 
     def getAssets(self, asset_type: Optional[AssetType] = AssetType.UNKNOWN) -> list[Asset]:
         """
