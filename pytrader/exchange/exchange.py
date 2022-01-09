@@ -5,8 +5,8 @@ from typing import Optional
 
 from pytrader.common.asset import Asset
 from pytrader.common.status import Status
-from pytrader.common.requests import RequestType
-from pytrader.config import ALPACA_PAPER_ADDRESS, ALPACA_PAPER_KEY, ALPACA_PAPER_SECRET
+from pytrader.common.requests import RequestType, ResponseType
+from pytrader.config import ALPACA_PAPER_ADDRESS, ALPACA_PAPER_KEY, ALPACA_PAPER_SECRET, ALPACA_PAPER_WEBSOCKET
 import alpaca_trade_api
 
 
@@ -14,14 +14,8 @@ class ExchangeName(enum.Enum):
     """
      Enum used to identify the relevant exchange. \n
      """
-    UNKNOWN = 0
-    ALPACA_PAPER = 1
-
-    def toString(self):
-        if self == ExchangeName.UNKNOWN:
-            return "UNKNOWN"
-        elif self == ExchangeName.ALPACA_PAPER:
-            return "ALPACA_PAPER"
+    UNKNOWN = "UNKNOWN"
+    ALPACA_PAPER = "ALPACA-PAPER"
 
 
 class ExchangeType(enum.Enum):
@@ -35,23 +29,15 @@ class ExchangeType(enum.Enum):
     CRYPTO = 4
 
 
-class ResponseType(enum.Enum):
-    """
-    Response types from the Exchange request
-    """
-    UNKNOWN = 0
-    SUCCESSFUL = 1
-    UNSUCCESSFUL = 2
-
-
-class ExchangeRequestResponse(enum.Enum):
+class ExchangeRequestResponse:
     """
     Response from the exchange relating to the request.  This contains a status and optional data
     """
 
-    def __init__(self, response_type: ResponseType, data=None):
+    def __init__(self, response_type: ResponseType, request_params=None, listen_required=False):
         self.__type: ResponseType = response_type
-        self.__data = data
+        self.__listen_required: bool = listen_required
+        self.__data = request_params
 
     @property
     def type(self):
@@ -60,6 +46,10 @@ class ExchangeRequestResponse(enum.Enum):
     @property
     def data(self):
         return self.__data
+
+    @property
+    def listen_required(self):
+        return self.__listen_required
 
 
 class Exchange:
@@ -74,9 +64,9 @@ class Exchange:
         self.__url: str = self.__getURL()
         self.__key: str = self.__getKey()
         self.__secret: str = self.__getSecret()
+        self.__websocket: str = self.__getWebsocket()
         self.__cash: float = 0.0
         self.__holdings: list[Asset] = []
-        print(f"{self.__type} MGR INIT")
 
     def __getURL(self) -> str:
         if self.__name == ExchangeName.ALPACA_PAPER:
@@ -103,6 +93,10 @@ class Exchange:
         api.close()
         return []
 
+    def __getWebsocket(self) -> str:
+        if self.__name == ExchangeName.ALPACA_PAPER:
+            return ALPACA_PAPER_WEBSOCKET
+
     def __init(self):
         self.__status = Status.INIT
         self.__cash = self.__getCash()
@@ -111,7 +105,6 @@ class Exchange:
     def start(self):
         self.__init()
         self.__status = Status.RUNNING
-        print(f"{self.__type} MGR RUN")
 
     @property
     def name(self):
@@ -129,11 +122,23 @@ class Exchange:
     def holdings(self) -> list[Asset]:
         return self.__holdings
 
+    @property
+    def key(self) -> str:
+        return self.__key
+
+    @property
+    def secret(self) -> str:
+        return self.__secret
+
+    @property
+    def websocket(self) -> str:
+        return self.__websocket
+
     def __determineAllowance(self) -> float:
         """
         returns an allowance for stock purchase
         """
-        return self.__cash / 2
+        return 1
 
     def __buy(self, asset: Asset):
         if self.__type == ExchangeType.PAPER_STOCK:
@@ -143,16 +148,16 @@ class Exchange:
             api.submit_order(symbol=asset.name, qty=qty, side="buy", type="market", client_order_id=order_id)
             api.close()
 
-            return ExchangeRequestResponse(ResponseType.SUCCESSFUL)
+            return ExchangeRequestResponse(ResponseType.SUCCESSFUL, request_params=None, listen_required=True)
 
     def request(self, asset: Asset, request_type: RequestType, request_params=None):
         if request_type == RequestType.INFO:
-            print(f"info requested for {asset.name} from the exchange {self.__name.toString()}")
+            print(f"info requested for {asset.name} from the exchange {self.__name.value}")
         elif request_type == RequestType.UPDATE:
             # TODO - exchange logic
             return ExchangeRequestResponse(status=ResponseType.SUCCESSFUL)
         elif request_type == RequestType.INFO:
-            return ExchangeRequestResponse(status=ResponseType.SUCCESSFUL, data=request_params)
+            return ExchangeRequestResponse(status=ResponseType.SUCCESSFUL, request_params=request_params)
         elif request_type == RequestType.BUY:
             return self.__buy(asset)
 

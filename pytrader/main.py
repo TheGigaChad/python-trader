@@ -28,6 +28,10 @@ if __name__ == "__main__":
     exch_thread = threading.Thread(target=ExchangeManager)
     exch_thread.start()
 
+    asset = Asset("TSLA", AssetType.PAPER_STOCK)
+    ex = ExchangeManager()
+    ex.request(asset=asset, request_type=RequestType.BUY)
+
     # asset = Asset("TSLA", AssetType.STOCK)
     # rpa = RiskParityAsset("RPA", AssetType.STOCK)
     # # initialise the risk parity manager

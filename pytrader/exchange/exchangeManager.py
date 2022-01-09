@@ -67,7 +67,7 @@ class ExchangeManager:
 
     def __getStaleRequests(self):
         """
-        returns all stale requests still sitting in exchanges.
+        returns all stale requests still sitting in exchanges.  This should be run on startup.
         """
         # TODO - search exchange requests for unfulfilled requests and return as a list of Requests
         self.__request_queue = []
@@ -77,16 +77,15 @@ class ExchangeManager:
         """
         exchange request
         """
+        print(f"Request for {request_type.value} made for {asset.name}.")
         if asset.type == AssetType.PAPER_STOCK:
             response: ExchangeRequestResponse = self.__paper_stock_exchange.request(asset, request_type, request_params)
-            if response.data is not None:
-                return self.__listener.listen_for(response.data)
+            print(f"Request for {request_type.value} made for {asset.name} is {response.type.value}.")
+            if response.listen_required:
+                # validation required that exchange received request (needed for buys/sells).
+                return self.__listener.listen_for(response.data, self.__paper_stock_exchange)
             else:
                 return response.type
-        elif asset.type == AssetType.PAPER_CRYPTO:
-            return self.__paper_stock_exchange.request(asset, request_type, request_params)
-        elif asset.type == AssetType.STOCK:
-            return self.__stock_exchange.request(asset, request_type, request_params)
 
     def update(self):
         """

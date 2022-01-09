@@ -3,16 +3,25 @@ import enum
 from pytrader.common.asset import Asset
 
 
+class ResponseType(enum.Enum):
+    """
+    Response types from the Exchange request
+    """
+    UNKNOWN = "UNKNOWN"
+    SUCCESSFUL = "SUCCESSFUL"
+    UNSUCCESSFUL = "UNSUCCESSFUL"
+
+
 class RequestType(enum.Enum):
     """
     enum for classifying the type of request made to the exchange.
     """
-    UNDEFINED = 0
-    INFO = 1
-    UPDATE = 2
-    BUY = 3
-    SELL = 4
-    HOLDINGS = 5
+    UNDEFINED = "UNDEFINED"
+    INFO = "INFO"
+    UPDATE = "UPDATE"
+    BUY = "BUY"
+    SELL = "SELL"
+    HOLDINGS = "HOLDINGS"
 
 
 class RequestStatus(enum.Enum):
