@@ -22,15 +22,19 @@ if __name__ == "__main__":
     sql_manager = SQLDbManager()
     sql_manager.updateLocalStores()
 
-
-    # initalise the exchange manager
-
+    # start the managers
     exch_thread = threading.Thread(target=ExchangeManager)
     exch_thread.start()
+    if USER_USE_TRADER:
+        trade_thread = threading.Thread(target=TradingManager)
+        trade_thread.start()
+    if USER_USE_RISK_PARITY:
+        risk_parity_thread = threading.Thread(target=RiskParityManager)
+        risk_parity_thread.start()
 
-    asset = Asset("TSLA", AssetType.PAPER_STOCK)
-    ex = ExchangeManager()
-    ex.request(asset=asset, request_type=RequestType.BUY)
+
+    # ex = ExchangeManager()
+    # ex.request(asset=asset, request_type=RequestType.BUY)
 
     # asset = Asset("TSLA", AssetType.STOCK)
     # rpa = RiskParityAsset("RPA", AssetType.STOCK)
