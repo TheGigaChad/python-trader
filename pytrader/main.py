@@ -1,59 +1,30 @@
 import threading
 
-from pytrader.riskParity.riskParityAsset import RiskParityAsset
-from pytrader.riskParity.riskParityManager import RiskParityManager
-from pytrader.exchange.exchangeManager import ExchangeManager
-from pytrader.exchange.exchange import RequestType
-from pytrader.common.asset import Asset, AssetType
-from pytrader.trade.tradingManager import TradingManager
 from pytrader.SQL.sqlDbManager import SQLDbManager
 from pytrader.config import USER_USE_RISK_PARITY, USER_USE_TRADER
-
-def load_models():
-    pass
-
-
-def load_sql():
-    pass
-
+from pytrader.exchange.exchangeManager import ExchangeManager
+from pytrader.models.modelManager import ModelManager
+from pytrader.riskParity.riskParityManager import RiskParityManager
+from pytrader.trade.tradingManager import TradingManager
 
 if __name__ == "__main__":
     # Update all SQL data
     sql_manager = SQLDbManager()
     sql_manager.updateLocalStores()
 
+    # Update all model data
+    model_manager = ModelManager()
+    model_manager.load()
+
     # start the managers
-    exch_thread = threading.Thread(target=ExchangeManager)
-    exch_thread.start()
+    exchange_thread = threading.Thread(target=ExchangeManager)
+    exchange_thread.start()
     if USER_USE_TRADER:
         trade_thread = threading.Thread(target=TradingManager)
         trade_thread.start()
     if USER_USE_RISK_PARITY:
         risk_parity_thread = threading.Thread(target=RiskParityManager)
         risk_parity_thread.start()
-
-
-    # ex = ExchangeManager()
-    # ex.request(asset=asset, request_type=RequestType.BUY)
-
-    # asset = Asset("TSLA", AssetType.STOCK)
-    # rpa = RiskParityAsset("RPA", AssetType.STOCK)
-    # # initialise the risk parity manager
-    # risk_parity_manager = RiskParityManager(exchange_manager=exchange_manager)
-    # # initialise the trading manager
-    # trading_manager = TradingManager(exchange_manager=exchange_manager)
-    # trading_manager.request(asset=asset, request_type=ExchangeRequestType.INFO)
-    # risk_parity_manager.request(asset=rpa, request_type=ExchangeRequestType.INFO)
-
-    # managers = []
-    # if USER_USE_RISK_PARITY:
-    #     risk_parity_manager = RiskParityManager(exchange_manager=exchange_manager)
-    #     managers.append(risk_parity_manager)
-    # if USER_USE_TRADER:
-    #     trading_manager = TradingManager(exchange_manager=exchange_manager)
-    #     managers.append(trading_manager)
-    #
-
 
 
 

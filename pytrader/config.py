@@ -34,6 +34,9 @@ SQL_SERVER_USER = "u238726529_mike"
 SQL_SERVER_PASSWORD = "MassiveLegend69"
 SQL_SERVER_WINDOWS_TABLE = "algo_trade_intent_windows"
 
+# Model repos
+MODEL_REPO_URL = ""
+
 # User set params
 USER_RISK_PARITY_RATIO = 0.6
 USER_LONG_TERM_TRADE_RATIO = 0.3
