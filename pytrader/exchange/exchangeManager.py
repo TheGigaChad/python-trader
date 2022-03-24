@@ -62,8 +62,8 @@ class ExchangeManager:
         self.__getStaleRequests()
         self.__status = Status.RUNNING
         print("EM STARTING")
-        while 1:
-            time.sleep(1)
+        # while 1:
+        #     time.sleep(1)
 
     def isRunning(self):
         return self.__status == Status.RUNNING
