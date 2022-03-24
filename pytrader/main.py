@@ -7,7 +7,8 @@ from pytrader.models.modelManager import ModelManager
 from pytrader.riskParity.riskParityManager import RiskParityManager
 from pytrader.trade.tradingManager import TradingManager
 
-if __name__ == "__main__":
+
+def main():
     # Update all SQL data
     sql_manager = SQLDbManager()
     sql_manager.updateLocalStores()
@@ -25,6 +26,10 @@ if __name__ == "__main__":
     if USER_USE_RISK_PARITY:
         risk_parity_thread = threading.Thread(target=RiskParityManager)
         risk_parity_thread.start()
+
+
+if __name__ == "__main__":
+    main()
 
 
 

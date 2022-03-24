@@ -68,6 +68,18 @@ class Exchange:
         self.__cash: float = 0.0
         self.__holdings: list[Asset] = []
 
+    def __ignoreResponse(self) -> bool:
+        """
+        Determines whether we ignore the response for the exchange, so we do not get trapped in a forever loop waiting
+        for a response.  This is onny valid for stock markets, as crypto is 24/7.
+        """
+        is_market_open: bool = alpaca_trade_api.REST(ALPACA_PAPER_KEY, ALPACA_PAPER_SECRET, ALPACA_PAPER_ADDRESS).\
+            get_clock().is_open
+        if (self.__type == ExchangeType.STOCK or self.__type == ExchangeType.PAPER_STOCK) and is_market_open:
+            return True
+        else:
+            return False
+
     def __getURL(self) -> str:
         if self.__name == ExchangeName.ALPACA_PAPER:
             return ALPACA_PAPER_ADDRESS
@@ -140,26 +152,52 @@ class Exchange:
         """
         return 1
 
+    def __paper_stock_buy(self, asset: Asset):
+        """
+        logic for a purchase of a paper stock.
+        """
+        api = alpaca_trade_api.REST(self.__key, self.__secret, self.__url)
+        qty = self.__determineAllowance()
+        order_id = "1" + str(random.randrange(1, 10000000))
+        api.submit_order(symbol=asset.name, qty=qty, side="buy", type="market", client_order_id=order_id)
+        api.close()
+
+        return ExchangeRequestResponse(ResponseType.SUCCESSFUL, request_params=None,
+                                       listen_required=self.__ignoreResponse())
+
     def __buy(self, asset: Asset):
         if self.__type == ExchangeType.PAPER_STOCK:
-            api = alpaca_trade_api.REST(self.__key, self.__secret, self.__url)
-            qty = self.__determineAllowance()
-            order_id = "1" + str(random.randrange(1, 10000000))
-            api.submit_order(symbol=asset.name, qty=qty, side="buy", type="market", client_order_id=order_id)
-            api.close()
+            return self.__paper_stock_buy(asset)
 
-            return ExchangeRequestResponse(ResponseType.SUCCESSFUL, request_params=None, listen_required=True)
+    def __paper_stock_sell(self, asset: Asset):
+        """
+        logic for a sale of a paper stock.
+        """
+        api = alpaca_trade_api.REST(self.__key, self.__secret, self.__url)
+        qty = api.get_position(symbol=asset.name).qty
+        order_id = "1" + str(random.randrange(1, 10000000))
+        api.submit_order(symbol=asset.name, qty=qty, side="sell", type="market", client_order_id=order_id)
+        api.close()
+
+        return ExchangeRequestResponse(ResponseType.SUCCESSFUL, request_params=None,
+                                       listen_required=self.__ignoreResponse())
+
+    def __sell(self, asset: Asset):
+        if self.__type == ExchangeType.PAPER_STOCK:
+            return self.__paper_stock_sell(asset)
 
     def request(self, asset: Asset, request_type: RequestType, request_params=None):
         if request_type == RequestType.INFO:
             print(f"info requested for {asset.name} from the exchange {self.__name.value}")
         elif request_type == RequestType.UPDATE:
             # TODO - exchange logic
-            return ExchangeRequestResponse(status=ResponseType.SUCCESSFUL)
+            return ExchangeRequestResponse(response_type=ResponseType.SUCCESSFUL)
         elif request_type == RequestType.INFO:
-            return ExchangeRequestResponse(status=ResponseType.SUCCESSFUL, request_params=request_params)
+            return ExchangeRequestResponse(response_type=ResponseType.SUCCESSFUL, request_params=request_params)
         elif request_type == RequestType.BUY:
             return self.__buy(asset)
+        elif request_type == RequestType.SELL:
+            return self.__sell(asset)
 
     def assetToJSON(self, request_type: Optional[RequestType] = RequestType.UNDEFINED) -> json:
         # TODO - this needs a lot of work

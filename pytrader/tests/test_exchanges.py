@@ -1,5 +1,8 @@
+import datetime
+
 import alpaca_trade_api as tradeapi
 import pytest
+import pytz
 
 from pytrader.config import ALPACA_PAPER_KEY, ALPACA_PAPER_SECRET, ALPACA_PAPER_ADDRESS, ALPACA_PAPER_ACCOUNT_NUMBER
 from pytrader.exchange.exchangeManager import ExchangeManager
@@ -26,6 +29,12 @@ def test_alpaca_paper_transfers_blocked():
     api = tradeapi.REST(ALPACA_PAPER_KEY, ALPACA_PAPER_SECRET, ALPACA_PAPER_ADDRESS)
     assert not api.get_account().transfers_blocked
 
+def test_alpaca_stuff():
+    api = tradeapi.REST(ALPACA_PAPER_KEY, ALPACA_PAPER_SECRET, ALPACA_PAPER_ADDRESS)
+    # Check if the market is open now.
+    clock = api.get_clock()
+    print(clock.is_open)
+    assert 1==1
 
 def test_exchange_paper_stock_account():
     exchange = ExchangeManager()

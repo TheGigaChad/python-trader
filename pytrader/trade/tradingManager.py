@@ -3,7 +3,6 @@ from typing import Optional
 from pydispatch import dispatcher
 
 from pytrader.common.requests import RequestType, ResponseType
-from pytrader.exchange.exchangeManager import ExchangeManager
 from pytrader.common.status import Status
 from pytrader.common.asset import Asset, AssetType
 from pytrader.common.dispatch import Sender, Signal
@@ -38,17 +37,17 @@ class TradingManager:
         while 1:
             time.sleep(15)
             asset = Asset("TSLA", AssetType.PAPER_STOCK)
-            order = Order(request_type=RequestType.BUY, asset=asset)
+            order = Order(request_type=RequestType.SELL, asset=asset)
             dispatcher.send(message=order, signal=self.__signal.value, sender=self.__sender.value)
 
     def isRunning(self):
         return self.__status == Status.RUNNING
 
     def isIdle(self):
-        return self.__status == Status.RUNNING
+        return self.__status == Status.IDLE
 
     def isError(self):
-        return self.__status == Status.RUNNING
+        return self.__status == Status.ERROR
 
     def isStopped(self):
         return self.__status == Status.STOPPED

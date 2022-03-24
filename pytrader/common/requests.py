@@ -10,6 +10,7 @@ class ResponseType(enum.Enum):
     UNKNOWN = "UNKNOWN"
     SUCCESSFUL = "SUCCESSFUL"
     UNSUCCESSFUL = "UNSUCCESSFUL"
+    MARKET_CLOSED = "MARKET_CLOSED"
 
 
 class RequestType(enum.Enum):
