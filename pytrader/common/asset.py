@@ -3,8 +3,6 @@ import enum
 import json
 from typing import Optional
 
-from pytrader.exchange.exchange import ExchangeRequestType
-
 
 class AssetType(enum.Enum):
     """
@@ -53,12 +51,3 @@ class Asset:
     @last_updated.setter
     def last_updated(self, val: datetime.time):
         self.__last_updated = val
-
-    def toJSON(self, request_type: Optional[ExchangeRequestType] = ExchangeRequestType.UNDEFINED) -> json:
-        # TODO - this needs a lot of work
-        """
-        returns the asset information as a JSON item to be easily readable
-        """
-        if request_type == ExchangeRequestType.UNDEFINED:
-            return json.dumps(self)
-        return json.dumps(self.__name)

@@ -1,6 +1,7 @@
 import datetime
 import math
 from datetime import timedelta
+from pathlib import Path
 from typing import Union, Any, Optional
 
 import numpy as np
@@ -22,7 +23,8 @@ RSI_GRADIENT_SCALAR = 1
 RSI_INSTANTANEOUS_SCALAR = 1
 
 
-def getWindow(indicator: Indicator, trade_intent: TradeIntent, ticker: str, file: Optional[str] = "algo_windows.json"):
+def getWindow(indicator: Indicator, trade_intent: TradeIntent, ticker: str,
+              file: Optional[str] = Path(__file__).parent.parent / "SQL/data/windows.json"):
     """
     gets the window for analysis. \n
     :param indicator: (Indicator) type of indicator used for analysis.
@@ -95,6 +97,8 @@ def getRSI(window: int, data: pandas.DataFrame) -> pandas.Series:
     :param data: yahoo-fin stock object relating to stock.
     :return: RSI data
     """
+    if data.columns.__contains__("adjclose"):
+        data.rename(columns={"adjclose": "Adj Close"}, inplace=True)
     return RSIIndicator(close=data['Adj Close'], window=window).rsi()
 
 
@@ -114,23 +118,23 @@ def analyseRSI(trade_intent: TradeIntent, data: pandas.DataFrame, ticker: str) -
         return 0.0
 
     # Scale the RSI to be between -3,3 to fit tanh scale, then return tanh to go a value between -1,1
-    rsi_scaled = (0.06 * rsi_data.rsi()) - 3
-
-    # Because RSI is inverted (high rsi, we want to sell) we invert the result
-    rsi_tanh = math.tanh(rsi_scaled) * -1
-
-    # Gradient calculations
-    data_y = np.array(data)
-    data_x = np.arange(1, len(data_y) + 1)
-    # Fit line
-    slope, intercept = np.polyfit(data_x, data_y, 1)
-
-    # rescale gradient, accommodate for inverse in the same way rsi value is
-    slope_scaled = (window / 100) * slope
-    slope_tanh = math.tanh(slope_scaled) * -1
-
-    rsi_out = (slope_tanh * RSI_GRADIENT_SCALAR) + (rsi_tanh * RSI_INSTANTANEOUS_SCALAR) / 2
-    return rsi_out
+    # rsi_scaled = (0.06 * rsi_data.rsi()) - 3
+    #
+    # # Because RSI is inverted (high rsi, we want to sell) we invert the result
+    # rsi_tanh = math.tanh(rsi_scaled) * -1
+    #
+    # # Gradient calculations
+    # data_y = np.array(data)
+    # data_x = np.arange(1, len(data_y) + 1)
+    # # Fit line
+    # slope, intercept = np.polyfit(data_x, data_y, 1)
+    #
+    # # rescale gradient, accommodate for inverse in the same way rsi value is
+    # slope_scaled = (window / 100) * slope
+    # slope_tanh = math.tanh(slope_scaled) * -1
+    #
+    # rsi_out = (slope_tanh * RSI_GRADIENT_SCALAR) + (rsi_tanh * RSI_INSTANTANEOUS_SCALAR) / 2
+    return 1.0
 
 
 def getEMA(window: int, data: pandas.DataFrame) -> pandas.Series:
@@ -140,6 +144,8 @@ def getEMA(window: int, data: pandas.DataFrame) -> pandas.Series:
     :param data: stock data
     :return: (pandas.Series) EMA data
     """
+    if data.columns.__contains__("adjclose"):
+        data.rename(columns={"adjclose": "Adj Close"}, inplace=True)
     ema_data = pta.ema(close=data['Adj Close'], length=window)
     return ema_data
 
@@ -179,6 +185,8 @@ def appendBollinger(window: int, data: pandas.DataFrame) -> pandas.DataFrame:
     """
     sma_name = "sma_" + str(window)
     data[sma_name] = getSMA(window, data)
+    if data.columns.__contains__("adjclose"):
+        data.rename(columns={"adjclose": "Adj Close"}, inplace=True)
     data['upper_bb'], data['lower_bb'] = bollingerBounds(data['Adj Close'], data[sma_name], window)
     return data
 
@@ -205,18 +213,22 @@ def getMACD(window_fast: int, window_slow: int, window_sig: int, data: pandas.Da
     :param data: stock data
     :return: MACD data
     """
+    if data.columns.__contains__("adjclose"):
+        data.rename(columns={"adjclose": "Adj Close"}, inplace=True)
+
     macd_data = pta.macd(close=data['Adj Close'], fast=window_fast, slow=window_slow, signal=window_sig, append=True)
     return macd_data
 
 
-def analyseMACD(trade_intent: TradeIntent, data: pandas.DataFrame) -> float:
+def analyseMACD(trade_intent: TradeIntent, data: pandas.DataFrame, ticker: str) -> float:
     """
     MACD analysis of the provided asset based on provided timeframe.\n
     :param trade_intent: determines whether we are short/long/hold analysing.
     :param data: stock data
+    :param ticker: name of stock
     :return: the confidence in the provided asset
     """
-    window_fast, window_slow, window_sig = getWindow(Indicator.MACD, trade_intent)
+    window_fast, window_slow, window_sig = getWindow(Indicator.MACD, trade_intent, ticker)
     macd_data = getMACD(window_fast, window_slow, window_sig, data)
     return 1.0
 
@@ -232,18 +244,11 @@ def analyseVolume(trade_intent: TradeIntent, data: pandas.DataFrame, ticker: str
     window = getWindow(Indicator.VOLUME, trade_intent, ticker)
     volume_data = on_balance_volume(close=data.adjclose, volume=data.volume)
 
-    if volume_data.isnull:
-        print("analyseRSI - momentum RSI data is null")
+    if volume_data is None:
+        print("analyseVolume - volume data is null")
         return 0.0
 
-    volume_mean = volume_data.mean()
-    volume_current = volume_data.last()
-
-    # Using this.. https://math.stackexchange.com/questions/3425798/how-to-squish-and-squash-x-axis-hyperbolic-tangent
-    # We scale the tanh based on stuff
-    vol_tanh = 0.5 * (1 - math.tanh(volume_mean * (volume_current - volume_mean)))
-
-    return vol_tanh
+    return 1.0
 
 
 def getSMA(window: int, data: pandas.DataFrame) -> pandas.Series:
@@ -254,6 +259,8 @@ def getSMA(window: int, data: pandas.DataFrame) -> pandas.Series:
     :return: Simple Moving Average Array
     """
     if isinstance(data, pandas.DataFrame):
+        if data.columns.__contains__("adjclose"):
+            data.rename(columns={"adjclose": "Adj Close"}, inplace=True)
         data = data.loc[:, 'Adj Close']
     sma = data.rolling(window=window).mean()
     return sma
@@ -285,17 +292,17 @@ def analyse(stock_name: str, trade_intent: TradeIntent, indicator: Indicator) ->
     data = si.get_data(str(stock_name))
 
     if indicator == Indicator.RSI:
-        return analyseRSI(trade_intent, data)
+        return analyseRSI(trade_intent, data, stock_name)
     elif indicator == Indicator.EMA:
-        return analyseEMA(trade_intent, data)
+        return analyseEMA(trade_intent, data, stock_name)
     elif indicator == Indicator.BOLLINGER:
-        return analyseBollinger(trade_intent, data)
+        return analyseBollinger(trade_intent, data, stock_name)
     elif indicator == Indicator.MACD:
-        return analyseMACD(trade_intent, data)
+        return analyseMACD(trade_intent, data, stock_name)
     elif indicator == Indicator.VOLUME:
-        return analyseVolume(trade_intent, data)
+        return analyseVolume(trade_intent, data, stock_name)
     elif indicator == Indicator.SMA:
-        return analyseSMA(trade_intent, data)
+        return analyseSMA(trade_intent, data, stock_name)
 
     else:
         print(f"{indicator} is not a valid  or supported Indicator type.")

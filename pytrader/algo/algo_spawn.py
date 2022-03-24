@@ -251,7 +251,6 @@ def listenForTradeUpdate(name, qty, id):
         # ws.run_forever()
     except Exception as e:
         print(e)
-
     return True
 
 
