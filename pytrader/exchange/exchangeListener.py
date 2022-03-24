@@ -14,13 +14,14 @@ def listenForTradeUpdate(name, qty, id):
     """
     stream = "wss://paper-api.alpaca.markets/stream"
     try:
-        ws = websocket.WebSocketApp(stream, on_open=on_open, on_message=on_message)
-        print(ws)
-        api.submit_order(symbol=name,
-                         qty=qty,
-                         side='buy',
-                         type='market',
-                         client_order_id=id)
+        pass
+        # ws = websocket.WebSocketApp(stream, on_open=on_open, on_message=on_message)
+        # print(ws)
+        # api.submit_order(symbol=name,
+        #                  qty=qty,
+        #                  side='buy',
+        #                  type='market',
+        #                  client_order_id=id)
 
         # ws.run_forever()
     except Exception as e:
