@@ -6,10 +6,12 @@ class Order:
     """
     contains the data that gets passed to the request call.
     """
-    def __init__(self, request_type: RequestType, asset: Asset):
+
+    def __init__(self, request_type: RequestType, asset: Asset, qty: float):
         self.__type: RequestType = request_type
         self.__asset: Asset = asset
         self.__status: RequestStatus = RequestStatus.INIT
+        self.__qty: float = qty
 
     @property
     def status(self) -> RequestStatus:
@@ -26,3 +28,7 @@ class Order:
     @property
     def asset(self) -> Asset:
         return self.__asset
+
+    @property
+    def qty(self) -> float:
+        return self.__qty

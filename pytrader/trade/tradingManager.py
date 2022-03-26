@@ -1,3 +1,4 @@
+import random
 import time
 from typing import Optional
 from pydispatch import dispatcher
@@ -8,10 +9,82 @@ from pytrader.common.asset import Asset, AssetType
 from pytrader.common.dispatch import Sender, Signal
 from pytrader.common.order import Order
 
+from pytrader.config import DEV_TEST_MODE
+
+
+def getOwnedAssets() -> [Asset]:
+    """
+    return ALL assets from all exchanges
+    """
+    # TODO - getOwnedAssets() logic
+    pass
+
+
+def determineBuySell(confidence: float, asset: Asset) -> bool:
+    """
+    determines whether we should buy, sell or ignore the asset based on the confidence value.
+    :param confidence: float value relating to how good of a trade is available.
+    :param asset: the asset we are inspecting.
+    :return: boolean for whether we should buy/sell or ignore
+    """
+
+    # TODO - determineBuySell() logic
+    buy_sell: bool = False
+    if confidence >= 0.0:
+        buy_sell = True
+    return buy_sell
+
+
+def analyseAsset(asset: Asset) -> float:
+    """
+    Processes the asset based on in-built methodologies in order to determine the confidence value of the stock.
+    A high value will constitute a purchase opportunity, a low value will mean a sell opportunity.
+    :param asset: asset to be analysed.
+    :return: confidence value.
+    """
+    # TODO - analyseAsset() logic
+    return random.Random.randrange(-10, 10, 0.01)
+
+
+def findNewAsset() -> Asset:
+    """
+    returns a new asset that will be used for inspection for buy/sell opportunities.
+    """
+    # TODO - create findNewAsset() logic
+    return Asset("TSLA", AssetType.PAPER_STOCK)
+
+
+def calculateQuantity(asset: Asset, confidence: float) -> float:
+    """
+    creturns the quantity of stocks for the order. \n
+    :param confidence: float value relating to how good of a trade is available. (low = sell, buy = high)
+    :param asset: the asset we are inspecting.
+    :return: how many stocks
+    """
+    # TODO - calculateQuantity() logic
+
+    return 1.0
+
+
+def createOrder(asset: Asset, confidence: float) -> Order:
+    """
+    create an order for the asset based on the confidence value. \n
+    :param confidence: float value relating to how good of a trade is available. (low = sell, buy = high)
+    :param asset: the asset we are inspecting.
+    :return: boolean for whether we should buy/sell or ignore
+    """
+    # TODO - createOrder() logic
+
+    request_type : RequestType = RequestType.SELL
+    if confidence >= 0.0:
+        request_type = RequestType.BUY
+
+    return Order(request_type=request_type, asset=asset, qty=calculateQuantity(asset, confidence))
+
 
 class TradingManager:
     """
-    The manager that will handle all the threads
+    The manager that will handle all the threads \n
     """
 
     def __init__(self):
@@ -33,12 +106,26 @@ class TradingManager:
         print("TM STARTING")
         dispatcher.connect(self.__dispatcher_receive, signal=Signal.EXCHANGE_MANAGER.value,
                            sender=Signal.EXCHANGE_MANAGER.value)
+
+        # TODO - probe ALL exchanges for asset list
+        self.__assets = getOwnedAssets()
         self.__status = Status.RUNNING
         while 1:
-            time.sleep(15)
-            asset = Asset("TSLA", AssetType.PAPER_STOCK)
-            order = Order(request_type=RequestType.SELL, asset=asset)
-            dispatcher.send(message=order, signal=self.__signal.value, sender=self.__sender.value)
+            # Use this as a rudimentary switch for testing
+            if DEV_TEST_MODE:
+                # Loop buying TSLA for test purposes
+                time.sleep(15)
+                asset = Asset("TSLA", AssetType.PAPER_STOCK)
+                order = Order(request_type=RequestType.BUY, asset=asset, qty=1)
+                dispatcher.send(message=order, signal=self.__signal.value, sender=self.__sender.value)
+            else:
+                if len(self.__assets) == 0 or not self.__ownedAssetsInspected:
+                    asset: Asset = findNewAsset()
+                    if asset is not None:
+                        confidence: float = analyseAsset(asset)
+                        if determineBuySell(confidence, asset):
+                            order: Order = createOrder(asset=asset, confidence=confidence)
+                            dispatcher.send(message=order, signal=self.__signal.value, sender=self.__sender.value)
 
     def isRunning(self):
         return self.__status == Status.RUNNING
@@ -54,7 +141,7 @@ class TradingManager:
 
     def getAssets(self, asset_type: Optional[AssetType] = AssetType.UNKNOWN) -> list[Asset]:
         """
-        returns specified assets as a list.  See ExchangeManager.getAssets for more info.
+        returns specified assets as a list.  See ExchangeManager.getAssets for more info. \n
         :param asset_type: asset type if specifically needed, else will return all.
         :return: list of all Assets.
         """
@@ -64,8 +151,14 @@ class TradingManager:
         """
         handle dispatcher response.  This is used to communicate with the other Managers.
         """
+        # TODO - TM should interpret all responses
+
         if isinstance(message, ResponseType):
             print(f'TM has received message that the order was: {message.value}')
 
-
-    
+    def __ownedAssetsInspected(self):
+        """
+        check all owned assets have been inspected before we try and find new ones.
+        """
+        # TODO - checkOwnedAssets() logic
+        return False

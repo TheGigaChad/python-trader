@@ -51,3 +51,8 @@ USER_SHORT_TERM_TRADE_RATIO = 0.1
 USER_PAPER_MODE = True
 USER_USE_RISK_PARITY = False
 USER_USE_TRADER = True
+
+# --------------------
+# Developer set params
+# --------------------
+DEV_TEST_MODE = True
