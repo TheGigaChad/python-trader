@@ -75,7 +75,8 @@ class Exchange:
         """
         is_market_open: bool = alpaca_trade_api.REST(ALPACA_PAPER_KEY, ALPACA_PAPER_SECRET, ALPACA_PAPER_ADDRESS).\
             get_clock().is_open
-        if (self.__type == ExchangeType.STOCK or self.__type == ExchangeType.PAPER_STOCK) and is_market_open:
+        if (self.__type == ExchangeType.STOCK or self.__type == ExchangeType.PAPER_STOCK) and not is_market_open:
+            print("Market closed, ignoring response")
             return True
         else:
             return False
@@ -163,7 +164,7 @@ class Exchange:
         api.close()
 
         return ExchangeRequestResponse(ResponseType.SUCCESSFUL, request_params=None,
-                                       listen_required=self.__ignoreResponse())
+                                       listen_required=not self.__ignoreResponse())
 
     def __buy(self, asset: Asset):
         if self.__type == ExchangeType.PAPER_STOCK:

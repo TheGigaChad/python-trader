@@ -62,8 +62,8 @@ class ExchangeManager:
         self.__getStaleRequests()
         self.__status = Status.RUNNING
         print("EM STARTING")
-        # while 1:
-        #     time.sleep(1)
+        while 1:
+            time.sleep(1)
 
     def isRunning(self):
         return self.__status == Status.RUNNING
@@ -88,7 +88,6 @@ class ExchangeManager:
         """
         handle dispatcher response.  This is used to communicate with the other Managers.
         """
-        print('EM has received message: {}'.format(message))
 
         if isinstance(message, Order):
             print("EM recieved order")
@@ -107,6 +106,7 @@ class ExchangeManager:
             print(f"Request for {request_type.value} made for {asset.name} is {response.type.value}.")
             if response.listen_required:
                 # validation required that exchange received request (needed for buys/sells).
+                # TODO - Add listener for trade confirmations
                 return self.__listener.listen_for(response.data, self.__paper_stock_exchange)
             else:
                 return response.type
