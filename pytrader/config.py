@@ -37,6 +37,16 @@ SQL_SERVER_USER = "u238726529_mike"
 SQL_SERVER_PASSWORD = "MassiveLegend69"
 SQL_SERVER_WINDOWS_TABLE = "algo_trade_intent_windows"
 
+SQL_SERVER_BUY_SELL_THRESHOLDS_TABLE = "algo_trade_buy_sell_thresholds"
+
+SQL_SERVER_TRADES_TABLE = "algo_trade_trades"
+SQL_SERVER_TRADES_TABLE_COLUMN_NAME: str = "`name`"
+SQL_SERVER_TRADES_TABLE_COLUMN_ORDER_TYPE: str = "`order_type`"
+SQL_SERVER_TRADES_TABLE_COLUMN_QUANTITY: str = "`quantity`"
+SQL_SERVER_TRADES_TABLE_COLUMN_ORDER_ID: str = "`order_id`"
+SQL_SERVER_TRADES_TABLE_COLUMN_TIMESTAMP: str = "`timestamp`"
+SQL_SERVER_TRADES_TABLE_COLUMN_EXCHANGE: str = "`exchange`"
+
 # -----------
 # Model repos
 # -----------

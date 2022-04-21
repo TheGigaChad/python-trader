@@ -1,14 +1,16 @@
+import datetime
 import random
 import time
 from typing import Optional
+
 from pydispatch import dispatcher
 
-from pytrader.common.requests import RequestType, ResponseType
-from pytrader.common.status import Status
+from pytrader.SQL.sqlDb.sqlDb import SQLDb, SQLDbType
 from pytrader.common.asset import Asset, AssetType
 from pytrader.common.dispatch import Sender, Signal
 from pytrader.common.order import Order
-
+from pytrader.common.requests import RequestType, ResponseType
+from pytrader.common.status import Status
 from pytrader.config import DEV_TEST_MODE
 
 
@@ -27,12 +29,30 @@ def determineBuySell(confidence: float, asset: Asset) -> bool:
     :param asset: the asset we are inspecting.
     :return: boolean for whether we should buy/sell or ignore
     """
-
-    # TODO - determineBuySell() logic
+    buy_threshold, sell_threshold = determineBuySellThresholdValues(asset.name)
     buy_sell: bool = False
-    if confidence >= 0.0:
+    if confidence >= buy_threshold:
         buy_sell = True
     return buy_sell
+
+
+def determineBuySellThresholdValues(asset_name: Asset.name) -> tuple[float, float]:
+    """
+    return the buy and sell threshold values for the relevant asset.
+    :param asset_name: the asset name we are inspecting.
+    :return: buy/sell threshold values as tuple.  Buy is first, second is sell.
+    """
+    # TODO-Tidy - this should use a method to match names...
+    db: SQLDb = SQLDb(SQLDbType.BUY_SELL_THRESHOLDS)
+    rows, headers = db.runSQLQuery(f"SELECT buy, sell FROM {db.table_name} WHERE name = '{asset_name}';")
+    if len(rows) != 1:
+        print(f"tradingManager.determineBuySellThresholdValues - no db entry for {asset_name}. creating now...")
+        val_a, val_b = db.runSQLQuery(
+            f"INSERT INTO {db.table_name} (`name`, `buy`, `sell`, `last_updated`) VALUES ('{asset_name}',"
+            f"'1.0','-1.0','{datetime.datetime.now()}');")
+        rows, headers = db.runSQLQuery(f"SELECT buy, sell FROM {db.table_name} WHERE name = '{asset_name}';")
+
+    return rows[0][0], rows[0][1]
 
 
 def analyseAsset(asset: Asset) -> float:
@@ -73,12 +93,13 @@ def createOrder(asset: Asset, confidence: float) -> Order:
     :param asset: the asset we are inspecting.
     :return: boolean for whether we should buy/sell or ignore
     """
-    # TODO - createOrder() logic
-
-    request_type : RequestType = RequestType.SELL
+    # TODO - createOrder() logic - we should look at our db to see buy/sell threshold
+    buy_threshold, sell_threshold = determineBuySell()
+    request_type: RequestType = RequestType.SELL
     if confidence >= 0.0:
         request_type = RequestType.BUY
-
+    elif confidence < 0:
+        request_type = RequestType.SELL
     return Order(request_type=request_type, asset=asset, qty=calculateQuantity(asset, confidence))
 
 

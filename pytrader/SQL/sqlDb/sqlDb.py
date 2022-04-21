@@ -1,12 +1,12 @@
 import datetime
+import enum
 import json
-from typing import Union, Optional
+from pathlib import Path
+
+import mysql.connector as mysql
 
 from pytrader.config import SQL_SERVER_DATABASE, SQL_SERVER_HOST, SQL_SERVER_USER, SQL_SERVER_PASSWORD, \
-    SQL_SERVER_WINDOWS_TABLE
-import mysql.connector as mysql
-import enum
-from pathlib import Path
+    SQL_SERVER_WINDOWS_TABLE, SQL_SERVER_BUY_SELL_THRESHOLDS_TABLE, SQL_SERVER_TRADES_TABLE
 
 
 def SQLResponseToJson(sql_response: list, column_names: list) -> json:
@@ -28,6 +28,27 @@ def SQLResponseToJson(sql_response: list, column_names: list) -> json:
 class SQLDbType(enum.Enum):
     USERS = 0
     WINDOW = 1
+    BUY_SELL_THRESHOLDS = 2
+    TRADES = 3
+
+
+class SQLDbQueryType(enum.Enum):
+    """
+    enum type that specifies the query type for generic requests
+    """
+    GET_VALUE = 0
+    GET_ALL = 1
+    INSERT = 2
+    DELETE = 3
+    UPDATE = 4
+
+
+class SQLQueryResponseType(enum.Enum):
+    """
+    enum that represents whether the sql request was successful or not.
+    """
+    SUCCESSFUL = 0
+    UNSUCCESSFUL = 1
 
 
 class SQLDb:
@@ -38,54 +59,77 @@ class SQLDb:
     def __init__(self, db_type: SQLDbType):
         self.__db_type: SQLDbType = db_type
         self.__db_name: str = self.__get_db_name()
-        self.__table_name: str = self.__get_table_name()
+        self.__table_name: str = self.table_name
         self.__user: str = self.__get_user()
         self.__password: str = self.__get_password()
         self.__host: str = self.__get_host()
         self.__local_dir: Path = self.__get_local_dir()
-        self.__last_updated : datetime.datetime = datetime.datetime.min
+        self.__last_updated: datetime.datetime = datetime.datetime.min
 
     @property
     def last_updated(self):
         return self.__last_updated
 
-    def __get_db_name(self) -> str:
-        if self.__db_type == SQLDbType.WINDOW:
-            return SQL_SERVER_DATABASE
-
-    def __get_table_name(self) -> str:
+    @property
+    def table_name(self) -> str:
         if self.__db_type == SQLDbType.WINDOW:
             return SQL_SERVER_WINDOWS_TABLE
+        if self.__db_type == SQLDbType.BUY_SELL_THRESHOLDS:
+            return SQL_SERVER_BUY_SELL_THRESHOLDS_TABLE
+        if self.__db_type == SQLDbType.TRADES:
+            return SQL_SERVER_TRADES_TABLE
+
+    def __get_db_name(self) -> str:
+        if self.__db_type == SQLDbType.WINDOW or self.__db_type == SQLDbType.BUY_SELL_THRESHOLDS \
+                or self.__db_type == SQLDbType.TRADES:
+            return SQL_SERVER_DATABASE
 
     def __get_user(self) -> str:
-        if self.__db_type == SQLDbType.WINDOW:
+        if self.__db_type == SQLDbType.WINDOW or self.__db_type == SQLDbType.BUY_SELL_THRESHOLDS \
+                or self.__db_type == SQLDbType.TRADES:
             return SQL_SERVER_USER
 
     def __get_password(self) -> str:
-        if self.__db_type == SQLDbType.WINDOW:
+        if self.__db_type == SQLDbType.WINDOW or self.__db_type == SQLDbType.BUY_SELL_THRESHOLDS \
+                or self.__db_type == SQLDbType.TRADES:
             return SQL_SERVER_PASSWORD
 
     def __get_host(self) -> str:
-        if self.__db_type == SQLDbType.WINDOW:
+        if self.__db_type == SQLDbType.WINDOW or self.__db_type == SQLDbType.BUY_SELL_THRESHOLDS \
+                or self.__db_type == SQLDbType.TRADES:
             return SQL_SERVER_HOST
 
     def __get_local_dir(self) -> Path:
         local_dir = Path(__file__).parent
         if self.__db_type == SQLDbType.WINDOW:
             return local_dir / 'data/windows.json'
+        elif self.__db_type == SQLDbType.BUY_SELL_THRESHOLDS:
+            return local_dir / 'data/buy_sell_thresholds.json'
+        elif self.__db_type == SQLDbType.TRADES:
+            return local_dir / 'data/trades.json'
 
     def runSQLQuery(self, query: str) -> tuple[any, any]:
         """
         Runs a specified query on the db and returns the response and column_names as a tuple
         """
+        # TODO - this should be a little more bulletproof
+        # default params and setup types
         db_connection = mysql.connect(host=self.__host, database=self.__db_name, user=self.__user,
                                       password=self.__password)
         cursor = db_connection.cursor()
-        cursor.execute(query)
-        response = cursor.fetchall()
-        column_names = [i[0] for i in cursor.description]
-        cursor.close()
-        return response, column_names
+        try:
+            cursor.execute(query)
+            response = cursor.fetchall()
+
+            if cursor.description is not None:
+                column_names = [i[0] for i in cursor.description]
+            else:
+                column_names = None
+            cursor.close()
+            return response, column_names
+        except Exception as e:
+            print(f"sqlDb.runQuery failed. query: {query}, exception: {e}")
+            return None, None
 
     def updateLocalStore(self, sql_query: str):
         """
@@ -108,6 +152,10 @@ class SQLDb:
         Updates all local stores related to the db and updates the last_updated time.
         """
         if self.__db_type == SQLDbType.WINDOW:
+            sql_query = f"SELECT * FROM {self.__table_name} WHERE 1"
+            self.updateLocalStore(sql_query)
+
+        if self.__db_type == SQLDbType.BUY_SELL_THRESHOLDS:
             sql_query = f"SELECT * FROM {self.__table_name} WHERE 1"
             self.updateLocalStore(sql_query)
 
