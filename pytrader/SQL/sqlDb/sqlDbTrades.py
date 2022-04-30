@@ -1,7 +1,8 @@
 import datetime
+from typing import Optional
 
 from pytrader.SQL.sqlDb.Daos.sqlDbTradesDao import SQLDbTradesDao
-from pytrader.SQL.sqlDb.sqlDb import SQLDb, SQLDbType
+from pytrader.SQL.sqlDb.sqlDb import SQLDb, SQLDbType, SQLQueryResponseType
 from pytrader.common.requests import ResponseType, RequestType
 from pytrader.config import SQL_SERVER_TRADES_TABLE_COLUMN_NAME, SQL_SERVER_TRADES_TABLE_COLUMN_ORDER_TYPE, \
     SQL_SERVER_TRADES_TABLE_COLUMN_ORDER_ID, SQL_SERVER_TRADES_TABLE_COLUMN_EXCHANGE, \
@@ -22,16 +23,26 @@ class SQLDbTrades(SQLDb):
         self.__column_timestamp: str = SQL_SERVER_TRADES_TABLE_COLUMN_TIMESTAMP
         self.__column_exchange: str = SQL_SERVER_TRADES_TABLE_COLUMN_EXCHANGE
 
+    @property
+    def column_order_id(self):
+        return self.__column_order_id.strip('`')
+
+    @property
+    def column_order_type(self):
+        return self.__column_order_type.strip('`')
+
     def __createDao(self, rows) -> SQLDbTradesDao:
         return SQLDbTradesDao(rows[0], rows[1], rows[2], rows[3], rows[4], rows[5])
 
-    def getTradeByOrderId(self, order_id: int) -> SQLDbTradesDao:
+    def getTradeByOrderId(self, order_id: int) -> Optional[SQLDbTradesDao]:
         """
         gets a specific trade from the SQL server by the order id. \n
         :param order_id: the id of the trade.
         """
         query = f"SELECT * FROM `{super().table_name}` WHERE {self.__column_order_id} = {order_id}"
         rows, columns = self.runSQLQuery(query)
+        if len(rows) == 0:
+            return None
         return self.__createDao(rows[0])
 
     def getTradeByTimestamp(self, timestamp: datetime.datetime) -> SQLDbTradesDao:
@@ -56,7 +67,7 @@ class SQLDbTrades(SQLDb):
         if len(rows) == 0:
             return trade_list
 
-        for trade in rows[0]:
+        for trade in rows:
             trade_list.append(self.__createDao(trade))
         return trade_list
 
@@ -73,12 +84,12 @@ class SQLDbTrades(SQLDb):
         if len(rows) == 0:
             return trade_list
 
-        for trade in rows[0]:
+        for trade in rows:
             trade_list.append(self.__createDao(trade))
         return trade_list
 
     def getAllSellTrades(self) -> [SQLDbTradesDao]:
-        query = f"SELECT * FROM `{super().table_name}` WHERE {self.__column_order_type} = {RequestType.SELL.name}"
+        query = f"SELECT * FROM `{super().table_name}` WHERE {self.column_order_type} = '{RequestType.SELL.name}';"
         rows, columns = self.runSQLQuery(query)
         trade_list: list = []
         if rows is None or columns is None:
@@ -87,35 +98,34 @@ class SQLDbTrades(SQLDb):
         if len(rows) == 0:
             return trade_list
 
-        for trade in rows[0]:
+        for trade in rows:
             trade_list.append(self.__createDao(trade))
         return trade_list
 
-    def commitTrade(self, dao: SQLDbTradesDao) -> ResponseType:
+    def commitTrade(self, dao: SQLDbTradesDao) -> SQLQueryResponseType:
         """
         commits a trade dao into the db. \n
         :param dao: trade object being sent to db
         :return: whether the commit was successful or not
         """
         query = f"INSERT INTO `{super().table_name}` ({self.__column_name}, {self.__column_order_type}, " \
-                f"{self.__column_quantity}, {self.__column_order_id}, {self.__column_timestamp}, " \
-                f"{self.__column_exchange}) VALUES ('{dao.name}', '{dao.order_type.name}', '{dao.quantity}', " \
-                f"'{dao.order_id}', '{dao.timestamp}', '{dao.exchange.name}'); "
+                  f"{self.__column_quantity}, {self.__column_order_id}, {self.__column_timestamp}, {self.__column_exchange}) " \
+                  f"VALUES (%s, %s, %s, %s, %s, %s);"
+        params = (dao.name,
+                  dao.order_type.name.__str__(), dao.quantity.__str__(), dao.order_id.__str__(), dao.timestamp.__str__(),
+                  dao.exchange.name.__str__())
+        return self.runSQLQueryNoResponse(query, params)
 
-        rows, columns = self.runSQLQuery(query)
-        if rows is None and columns is not None:
-            return ResponseType.SUCCESSFUL
-        else:
-            return ResponseType.UNSUCCESSFUL
-
-    def deleteTrade(self, dao: SQLDbTradesDao) -> bool:
+    def deleteTrade(self, dao: SQLDbTradesDao) -> SQLQueryResponseType:
         """
         deletes trade from db.  Should only be used for testing and helper functions.  There is no need to delete
         records... \n
         :param dao: trade to be deleted
         :return: whether the deletion was successful
         """
-        pass
+        query = f"DELETE FROM {super().table_name} WHERE {self.column_order_id} = %s;"
+        params = [dao.order_id]
+        return self.runSQLQueryNoResponse(query, params)
 
     def isOrderIdUnique(self, order_id: int) -> bool:
         """

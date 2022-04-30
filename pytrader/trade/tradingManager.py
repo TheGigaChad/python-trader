@@ -5,7 +5,7 @@ from typing import Optional
 
 from pydispatch import dispatcher
 
-from pytrader.SQL.sqlDb.sqlDb import SQLDb, SQLDbType
+from pytrader.SQL.sqlDb.sqlDb import SQLDb, SQLDbType, SQLQueryResponseType
 from pytrader.common.asset import Asset, AssetType
 from pytrader.common.dispatch import Sender, Signal
 from pytrader.common.order import Order
@@ -36,23 +36,30 @@ def determineBuySell(confidence: float, asset: Asset) -> bool:
     return buy_sell
 
 
-def determineBuySellThresholdValues(asset_name: Asset.name) -> tuple[float, float]:
+def determineBuySellThresholdValues(asset_name: Asset.name) -> Optional[tuple[float, float]]:
     """
     return the buy and sell threshold values for the relevant asset.
     :param asset_name: the asset name we are inspecting.
     :return: buy/sell threshold values as tuple.  Buy is first, second is sell.
     """
-    # TODO-Tidy - this should use a method to match names...
+    # TODO - TIDY.....
     db: SQLDb = SQLDb(SQLDbType.BUY_SELL_THRESHOLDS)
     rows, headers = db.runSQLQuery(f"SELECT buy, sell FROM {db.table_name} WHERE name = '{asset_name}';")
-    if len(rows) != 1:
+    if len(rows) == 1:
+        return rows[0][0], rows[0][1]
+    else:
         print(f"tradingManager.determineBuySellThresholdValues - no db entry for {asset_name}. creating now...")
-        val_a, val_b = db.runSQLQuery(
-            f"INSERT INTO {db.table_name} (`name`, `buy`, `sell`, `last_updated`) VALUES ('{asset_name}',"
-            f"'1.0','-1.0','{datetime.datetime.now()}');")
-        rows, headers = db.runSQLQuery(f"SELECT buy, sell FROM {db.table_name} WHERE name = '{asset_name}';")
+        query = f"INSERT INTO {db.table_name} (`name`, `buy`, `sell`, `last_updated`) VALUES (%s, '1.0','-1.0',%s);"
+        params = [asset_name, datetime.datetime.now().__str__()]
+        success: SQLQueryResponseType = db.runSQLQueryNoResponse(query, params)
+        if success:
+            rows, headers = db.runSQLQuery(f"SELECT buy, sell FROM {db.table_name} WHERE name = '{asset_name}';")
+            return rows[0][0], rows[0][1]
+        print(f"determineBuySellThresholdValues - couldn't create new entry for {asset_name}.")
 
-    return rows[0][0], rows[0][1]
+    return None
+
+
 
 
 def analyseAsset(asset: Asset) -> float:

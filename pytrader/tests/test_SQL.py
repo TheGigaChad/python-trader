@@ -3,6 +3,7 @@ import json
 
 import mysql.connector as mysql
 
+from pytrader.SQL.sqlDb.sqlDb import SQLQueryResponseType
 from pytrader.common.requests import RequestType, ResponseType
 from pytrader.exchange.exchange import ExchangeName
 from pytrader.trade.tradingManager import determineBuySellThresholdValues
@@ -90,12 +91,12 @@ def test_sql_get_buy_sell_threshold_values_creation():
 
 # ========== TRADES ===============
 def test_sql_trades_get_trade():
-    asset_name: str = "TSLA"
-    order_type: str = "BUY_TEST"
-    quantity: float = 1.23
-    order_id: int = 111111111
-    timestamp_str: str = "2022-04-20 14:42:08"
-    exchange: str = "ALPACA"
+    asset_name: str = "TEST"
+    order_type: str = "BUY"
+    quantity: float = 1
+    order_id: int = 1
+    timestamp_str: str = "2022-04-28 03:44:03"
+    exchange: str = "ALPACA_PAPER"
 
     sql_db: SQLDbTrades = SQLDbTrades()
     trade_dao: SQLDbTradesDao = sql_db.getTradeByOrderId(order_id)
@@ -111,34 +112,37 @@ def test_sql_trades_get_trade():
 def test_sql_trades_get_all_buy_trades():
     sql_db: SQLDbTrades = SQLDbTrades()
     trades_dao: [SQLDbTradesDao] = sql_db.getAllBuyTrades()
-    assert len(trades_dao) == 0
+    assert len(trades_dao) == 1
 
 
 def test_sql_trades_get_all_sell_trades():
     sql_db: SQLDbTrades = SQLDbTrades()
     trades_dao: [SQLDbTradesDao] = sql_db.getAllSellTrades()
-    assert len(trades_dao) == 0
+    assert len(trades_dao) == 1
 
 
 def test_sql_trades_commit_trade():
     asset_name: str = "TEST"
     order_type: RequestType = RequestType.BUY
     quantity: float = 1.23
-    order_id: int = 1
+    order_id: int = 0
     timestamp: datetime.datetime = datetime.datetime.now()
     exchange: ExchangeName = ExchangeName.ALPACA_PAPER
 
     # commit trade to db
     sql_db: SQLDbTrades = SQLDbTrades()
     dao: SQLDbTradesDao = SQLDbTradesDao(asset_name, order_type, quantity, order_id, timestamp, exchange)
-    response: ResponseType = sql_db.commitTrade(dao)
-    assert response == ResponseType.SUCCESSFUL
+    response: SQLQueryResponseType = sql_db.commitTrade(dao)
+    assert response == SQLQueryResponseType.SUCCESSFUL
 
     # get created trade from db
     get_dao: SQLDbTradesDao = sql_db.getTradeByOrderId(order_id)
     assert get_dao is not None
 
     # delete created trade from db
-    sql_db.deleteTrade(dao)
+    delete_successful = sql_db.deleteTrade(dao)
+    assert delete_successful == SQLQueryResponseType.SUCCESSFUL
+
+    # make sure its gone
     get_dao = sql_db.getTradeByOrderId(order_id)
     assert get_dao is None

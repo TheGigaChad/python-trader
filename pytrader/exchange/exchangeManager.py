@@ -20,7 +20,7 @@ class ExchangeManager:
     """
     Handles the exchanges and different types of requests etc.  This should be interacted with by the different managers.
     """
-    def __init__(self):
+    def __init__(self, isTesting: Optional[bool] = False):
         self.__status = Status.UNKNOWN
         self.__sender: Sender = Sender.EXCHANGE_MANAGER
         self.__signal: Signal = Signal.EXCHANGE_MANAGER
@@ -30,6 +30,7 @@ class ExchangeManager:
         self.__stock_exchange = Exchange(exchange_type=ExchangeType.STOCK, name=ExchangeName.ALPACA_PAPER)
         self.__crypto_exchange = Exchange(exchange_type=ExchangeType.CRYPTO, name=ExchangeName.ALPACA_PAPER)
         self.__listener: ExchangeListener = ExchangeListener()
+        self.__testing: bool = isTesting
         self.initialise()
 
     @property
@@ -62,8 +63,9 @@ class ExchangeManager:
         self.__getStaleRequests()
         self.__status = Status.RUNNING
         print("EM STARTING")
-        while 1:
-            time.sleep(1)
+        if not self.__testing:
+            while 1:
+                time.sleep(1)
 
     def isRunning(self):
         return self.__status == Status.RUNNING

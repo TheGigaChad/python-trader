@@ -2,6 +2,7 @@ import datetime
 import enum
 import json
 from pathlib import Path
+from typing import Optional
 
 import mysql.connector as mysql
 
@@ -108,7 +109,7 @@ class SQLDb:
         elif self.__db_type == SQLDbType.TRADES:
             return local_dir / 'data/trades.json'
 
-    def runSQLQuery(self, query: str) -> tuple[any, any]:
+    def runSQLQuery(self, query: str, expect_output: Optional[bool] = True, params: Optional = None) -> tuple[any, any]:
         """
         Runs a specified query on the db and returns the response and column_names as a tuple
         """
@@ -130,6 +131,26 @@ class SQLDb:
         except Exception as e:
             print(f"sqlDb.runQuery failed. query: {query}, exception: {e}")
             return None, None
+
+    def runSQLQueryNoResponse(self, query, params) -> SQLQueryResponseType:
+        """
+        Runs a specified query on the db and returns the response and column_names as a tuple
+        """
+        # TODO - this should be a little more bulletproof
+        # default params and setup types
+        db_connection = mysql.connect(host=self.__host, database=self.__db_name, user=self.__user,
+                                      password=self.__password)
+        cursor = db_connection.cursor()
+        try:
+            cursor.execute(query, params)
+            db_connection.commit()
+            return SQLQueryResponseType.SUCCESSFUL
+        except Exception as e:
+            print(f"sqlDb.runQuery failed. query: {query}, exception: {e}")
+            db_connection.rollback()
+            return SQLQueryResponseType.UNSUCCESSFUL
+        finally:
+            db_connection.close()
 
     def updateLocalStore(self, sql_query: str):
         """
