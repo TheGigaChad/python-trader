@@ -1,18 +1,16 @@
-import json
 import time
 from typing import Optional
 
 from pydispatch import dispatcher
 
+from pytrader.common.asset import Asset, AssetType
 from pytrader.common.dispatch import Sender, Signal
+from pytrader.common.order import Order, OrderStatus
+from pytrader.common.status import Status
 from pytrader.exchange.exchange import Exchange, ExchangeName, ExchangeType, RequestType, \
     ResponseType
-from pytrader.common.asset import Asset, AssetType
-from pytrader.common.status import Status
-from pytrader.common.requests import Request
-from pytrader.exchange.exchangeListener import ExchangeListener
 from pytrader.exchange.exchange import ExchangeRequestResponse
-from pytrader.common.order import Order
+from pytrader.exchange.exchangeListener import ExchangeListener
 
 
 class ExchangeManager:
@@ -20,12 +18,13 @@ class ExchangeManager:
     """
     Handles the exchanges and different types of requests etc.  This should be interacted with by the different managers.
     """
+
     def __init__(self, isTesting: Optional[bool] = False):
         self.__status = Status.UNKNOWN
         self.__sender: Sender = Sender.EXCHANGE_MANAGER
         self.__signal: Signal = Signal.EXCHANGE_MANAGER
-        self.__request_queue: list[Request] = []
-        self.__paper_stock_exchange  = Exchange(exchange_type=ExchangeType.PAPER_STOCK, name=ExchangeName.ALPACA_PAPER)
+        self.__order_queue: list[Order] = []
+        self.__paper_stock_exchange = Exchange(exchange_type=ExchangeType.PAPER_STOCK, name=ExchangeName.ALPACA_PAPER)
         self.__paper_crypto_exchange = Exchange(exchange_type=ExchangeType.PAPER_CRYPTO, name=ExchangeName.ALPACA_PAPER)
         self.__stock_exchange = Exchange(exchange_type=ExchangeType.STOCK, name=ExchangeName.ALPACA_PAPER)
         self.__crypto_exchange = Exchange(exchange_type=ExchangeType.CRYPTO, name=ExchangeName.ALPACA_PAPER)
@@ -49,6 +48,9 @@ class ExchangeManager:
     def crypto_exchange(self):
         return self.crypto_exchange
 
+    def __add_request_to_queue(self, order: Order):
+        self.__order_queue.append(order)
+
     def __init(self):
         self.__status = Status.INIT
         dispatcher.connect(self.__dispatcher_receive, signal=Signal.TRADE_MANAGER.value,
@@ -66,6 +68,15 @@ class ExchangeManager:
         if not self.__testing:
             while 1:
                 time.sleep(1)
+                # check the queue status
+                for order in self.__order_queue:
+                    if order.status == OrderStatus.QUEUED or order.status == OrderStatus.INIT:
+                        pass
+                # save queue state to db(?)
+
+                # commit trade
+
+                # respond to trade manager on what we did
 
     def isRunning(self):
         return self.__status == Status.RUNNING
@@ -79,29 +90,50 @@ class ExchangeManager:
     def isStopped(self):
         return self.__status == Status.STOPPED
 
+    def __is_new_order_unique(self, new_order: Order) -> bool:
+        """
+        determines whether new order should be added or not based on whether it exists in the queue already.
+        @param new_order: the order we are checking already exists.
+        @return: whether the order is unique and should be added.
+        """
+        for order in self.__order_queue:
+            if order.asset.name == new_order.asset.name:
+                if order.status == OrderStatus.PROCESSING or order.status == OrderStatus.FILLED or \
+                        order.status == OrderStatus.QUEUED:
+                    return False
+        return True
+
     def __getStaleRequests(self):
         """
         returns all stale requests still sitting in exchanges.  This should be run on startup.
         """
         # TODO - search exchange requests for unfulfilled requests and return as a list of Requests
-        self.__request_queue = []
+        self.__order_queue = []
 
     def __dispatcher_receive(self, message):
         """
         handle dispatcher response.  This is used to communicate with the other Managers.
         """
-
         if isinstance(message, Order):
-            print("EM recieved order")
-            response = self.request(asset=message.asset, request_type=message.type)
-
+            # If we get an order, add it to the queue if it is unique.
+            if self.__is_new_order_unique(message):
+                print(f"EM received order for {message.asset.name}, adding to queue.")
+                message.status = OrderStatus.QUEUED
+                response = ResponseType.SUCCESSFUL
+                self.__add_request_to_queue(message)
+            else:
+                print(f"EM received a non-unique order for {message.asset.name}, cancelling the order.")
+                message.status = OrderStatus.CANCELLED
+                response = ResponseType.EXISTS
+            # response = self.request(asset=message.asset, request_type=message.type)
             dispatcher.send(message=response, signal=self.__signal.value, sender=self.__sender.value)
 
-    def request(self, asset: Asset, request_type: RequestType, request_params=None) \
-            -> ResponseType:
+    def request(self, asset: Asset, request_type: RequestType, request_params=None) -> ResponseType:
         """
         exchange request
         """
+
+        #
         print(f"Request for {request_type.value} made for {asset.name}.")
         if asset.type == AssetType.PAPER_STOCK:
             response: ExchangeRequestResponse = self.__paper_stock_exchange.request(asset, request_type, request_params)
@@ -145,5 +177,3 @@ class ExchangeManager:
         elif asset_type == AssetType.CRYPTO:
             assets = self.__crypto_exchange.holdings
         return assets
-
-
