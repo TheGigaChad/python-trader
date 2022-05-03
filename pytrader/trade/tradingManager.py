@@ -1,38 +1,65 @@
+import datetime
 import random
 import time
 from typing import Optional
+
 from pydispatch import dispatcher
 
-from pytrader.common.requests import RequestType, ResponseType
-from pytrader.common.status import Status
+from pytrader.SQL.sqlDb.sqlDb import SQLDb, SQLDbType, SQLQueryResponseType
 from pytrader.common.asset import Asset, AssetType
 from pytrader.common.dispatch import Sender, Signal
-from pytrader.common.order import Order
-
+from pytrader.common.order import Order, OrderType
+from pytrader.common.requests import RequestType, ResponseType
+from pytrader.common.status import Status
 from pytrader.config import DEV_TEST_MODE
 
 
-def getOwnedAssets() -> [Asset]:
+def getOwnedAssets() -> Optional[Asset]:
     """
     return ALL assets from all exchanges
     """
     # TODO - getOwnedAssets() logic
-    pass
+    return None
 
 
-def determineBuySell(confidence: float, asset: Asset) -> bool:
+def determineBuyOrSell(confidence: float, asset: Asset) -> Optional[RequestType]:
     """
     determines whether we should buy, sell or ignore the asset based on the confidence value.
     :param confidence: float value relating to how good of a trade is available.
     :param asset: the asset we are inspecting.
     :return: boolean for whether we should buy/sell or ignore
     """
+    buy_threshold, sell_threshold = determineBuySellThresholdValues(asset.name)
+    if confidence >= buy_threshold:
+        return RequestType.BUY
+    elif confidence <= sell_threshold:
+        return RequestType.SELL
+    else:
+        return None
 
-    # TODO - determineBuySell() logic
-    buy_sell: bool = False
-    if confidence >= 0.0:
-        buy_sell = True
-    return buy_sell
+
+def determineBuySellThresholdValues(asset_name: Asset.name) -> Optional[tuple[float, float]]:
+    """
+    return the buy and sell threshold values for the relevant asset.
+    :param asset_name: the asset name we are inspecting.
+    :return: buy/sell threshold values as tuple.  Buy is first, second is sell.
+    """
+    # TODO - TIDY.....
+    db: SQLDb = SQLDb(SQLDbType.BUY_SELL_THRESHOLDS)
+    rows, headers = db.runSQLQuery(f"SELECT buy, sell FROM {db.table_name} WHERE name = '{asset_name}';")
+    if len(rows) == 1:
+        return rows[0][0], rows[0][1]
+    else:
+        print(f"tradingManager.determineBuySellThresholdValues - no db entry for {asset_name}. creating now...")
+        query = f"INSERT INTO {db.table_name} (`name`, `buy`, `sell`, `last_updated`) VALUES (%s, '1.0','-1.0',%s);"
+        params = [asset_name, datetime.datetime.now().__str__()]
+        success: SQLQueryResponseType = db.runSQLQueryNoResponse(query, params)
+        if success:
+            rows, headers = db.runSQLQuery(f"SELECT buy, sell FROM {db.table_name} WHERE name = '{asset_name}';")
+            return rows[0][0], rows[0][1]
+        print(f"determineBuySellThresholdValues - couldn't create new entry for {asset_name}.")
+
+    return None
 
 
 def analyseAsset(asset: Asset) -> float:
@@ -62,24 +89,17 @@ def calculateQuantity(asset: Asset, confidence: float) -> float:
     :return: how many stocks
     """
     # TODO - calculateQuantity() logic
-
     return 1.0
 
 
-def createOrder(asset: Asset, confidence: float) -> Order:
+def createOrder(asset: Asset, confidence: float, request_type: RequestType) -> Order:
     """
     create an order for the asset based on the confidence value. \n
     :param confidence: float value relating to how good of a trade is available. (low = sell, buy = high)
     :param asset: the asset we are inspecting.
     :return: boolean for whether we should buy/sell or ignore
     """
-    # TODO - createOrder() logic
-
-    request_type : RequestType = RequestType.SELL
-    if confidence >= 0.0:
-        request_type = RequestType.BUY
-
-    return Order(request_type=request_type, asset=asset, qty=calculateQuantity(asset, confidence))
+    return Order(order_type=request_type, asset=asset, qty=calculateQuantity(asset, confidence))
 
 
 class TradingManager:
@@ -115,16 +135,19 @@ class TradingManager:
             if DEV_TEST_MODE:
                 # Loop buying TSLA for test purposes
                 time.sleep(15)
-                asset = Asset("TSLA", AssetType.PAPER_STOCK)
-                order = Order(request_type=RequestType.BUY, asset=asset, qty=1)
+                order_list = ["TSLA", "AAPL", "AMAZON"]
+                x = random.randrange(2)
+                asset = Asset(order_list[x], AssetType.PAPER_STOCK)
+                order = Order(order_type=OrderType.BUY, asset=asset, qty=1)
                 dispatcher.send(message=order, signal=self.__signal.value, sender=self.__sender.value)
             else:
                 if len(self.__assets) == 0 or not self.__ownedAssetsInspected:
                     asset: Asset = findNewAsset()
                     if asset is not None:
                         confidence: float = analyseAsset(asset)
-                        if determineBuySell(confidence, asset):
-                            order: Order = createOrder(asset=asset, confidence=confidence)
+                        request_type: RequestType = determineBuyOrSell(confidence, asset)
+                        if request_type == RequestType.BUY or RequestType.SELL:
+                            order: Order = createOrder(asset=asset, confidence=confidence, request_type=request_type)
                             dispatcher.send(message=order, signal=self.__signal.value, sender=self.__sender.value)
 
     def isRunning(self):
@@ -154,7 +177,7 @@ class TradingManager:
         # TODO - TM should interpret all responses
 
         if isinstance(message, ResponseType):
-            print(f'TM has received message that the order was: {message.value}')
+            print(f'TM has received confirmation that the order was: {message.value}')
 
     def __ownedAssetsInspected(self):
         """

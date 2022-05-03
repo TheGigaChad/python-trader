@@ -1,5 +1,28 @@
-from pytrader.common.requests import RequestType, RequestStatus
+import enum
+
 from pytrader.common.asset import Asset
+
+
+class OrderStatus(enum.Enum):
+    """
+    Status of the request depending on what is happening to it.
+    """
+    INIT       = 0
+    QUEUED     = 1
+    PROCESSING = 2
+    FILLED     = 3
+    FAILED     = 4
+    CANCELLED  = 5
+
+
+class OrderType(enum.Enum):
+    """
+    Type of order that we want fulfilled.
+    """
+    BUY             = 0
+    SELL            = 1
+    PRICE_TEST_BUY  = 2
+    PRICE_TEST_SELL = 3
 
 
 class Order:
@@ -7,22 +30,22 @@ class Order:
     contains the data that gets passed to the request call.
     """
 
-    def __init__(self, request_type: RequestType, asset: Asset, qty: float):
-        self.__type: RequestType = request_type
+    def __init__(self, order_type: OrderType, asset: Asset, qty: float):
+        self.__type: OrderType = order_type
         self.__asset: Asset = asset
-        self.__status: RequestStatus = RequestStatus.INIT
+        self.__status: OrderStatus = OrderStatus.INIT
         self.__qty: float = qty
 
     @property
-    def status(self) -> RequestStatus:
+    def status(self) -> OrderStatus:
         return self.__status
 
     @status.setter
-    def status(self, new_status: RequestStatus):
+    def status(self, new_status: OrderStatus):
         self.__status = new_status
 
     @property
-    def type(self) -> RequestType:
+    def type(self) -> OrderType:
         return self.__type
 
     @property
