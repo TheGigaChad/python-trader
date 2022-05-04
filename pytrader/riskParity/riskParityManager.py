@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, List
 
 from pytrader.common.asset import AssetType
 from pytrader.exchange.exchangeManager import ExchangeManager
@@ -33,10 +33,11 @@ class RiskParityManager(TradingManager):
             return assets
         assets=self.__assets
 
-    def getAssets(self, asset_type: Optional[AssetType] = AssetType.UNKNOWN) -> list[RiskParityAsset]:
-        assets = super().getAssets(asset_type)
-        risk_parity_assets = [RiskParityAsset(asset.name, asset.type) for asset in assets]
-        self.determineRisk(risk_parity_assets)
-        return risk_parity_assets
+    def get_assets(self, asset_type: Optional[AssetType] = AssetType.UNKNOWN) -> List[RiskParityAsset]:
+        pass
+        # assets = super().get_assets(asset_type)
+        # risk_parity_assets = [RiskParityAsset(asset.name, asset.type) for asset in assets]
+        # self.determineRisk(risk_parity_assets)
+        # return risk_parity_assets
 
 

@@ -7,22 +7,22 @@ class OrderStatus(enum.Enum):
     """
     Status of the request depending on what is happening to it.
     """
-    INIT       = 0
-    QUEUED     = 1
+    INIT = 0
+    QUEUED = 1
     PROCESSING = 2
-    FILLED     = 3
-    FAILED     = 4
-    CANCELLED  = 5
+    FILLED = 3
+    FAILED = 4
+    CANCELLED = 5
 
 
 class OrderType(enum.Enum):
     """
     Type of order that we want fulfilled.
     """
-    BUY             = 0
-    SELL            = 1
-    PRICE_TEST_BUY  = 2
-    PRICE_TEST_SELL = 3
+    BUY = "BUY"
+    SELL = "SELL"
+    PRICE_TEST_BUY = "PRICE_TEST_BUY"
+    PRICE_TEST_SELL = "PRICE_TEST_SELL"
 
 
 class Order:
