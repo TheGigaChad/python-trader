@@ -1,7 +1,7 @@
 import enum
 import json
 import random
-from typing import Optional
+from typing import Optional, List
 
 from pytrader.common.asset import Asset
 from pytrader.common.status import Status
@@ -15,7 +15,7 @@ class ExchangeName(enum.Enum):
      Enum used to identify the relevant exchange. \n
      """
     UNKNOWN = "UNKNOWN"
-    ALPACA_PAPER = "ALPACA-PAPER"
+    ALPACA_PAPER = "ALPACA_PAPER"
 
 
 class ExchangeType(enum.Enum):
@@ -66,7 +66,7 @@ class Exchange:
         self.__secret: str = self.__getSecret()
         self.__websocket: str = self.__getWebsocket()
         self.__cash: float = 0.0
-        self.__holdings: list[Asset] = []
+        self.__holdings: List[Asset] = []
 
     def __ignoreResponse(self) -> bool:
         """
@@ -100,7 +100,7 @@ class Exchange:
             api.close()
             return cash
 
-    def __getHoldings(self) -> list[Asset]:
+    def __getHoldings(self) -> List[Asset]:
         api = alpaca_trade_api.REST(self.__key, self.__secret, self.__url)
         # print(api.list_assets())
         api.close()
@@ -132,7 +132,7 @@ class Exchange:
         return self.__cash
 
     @property
-    def holdings(self) -> list[Asset]:
+    def holdings(self) -> List[Asset]:
         return self.__holdings
 
     @property

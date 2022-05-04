@@ -4,27 +4,61 @@ import json
 import mysql.connector as mysql
 
 from pytrader.SQL.sqlDb.sqlDb import SQLQueryResponseType
-from pytrader.common.requests import RequestType, ResponseType
-from pytrader.exchange.exchange import ExchangeName
-from pytrader.trade.tradingManager import determineBuySellThresholdValues
-from pytrader.marketData.marketData_SQL import getSQLWindowDataAsJson, updateWindowData
 from pytrader.SQL.sqlDb.sqlDbTrades import SQLDbTrades, SQLDbTradesDao
-
+from pytrader.common.order import OrderType
+from pytrader.common.requests import RequestType
 from pytrader.config import SQL_SERVER_HOST, SQL_SERVER_DATABASE, SQL_SERVER_USER, SQL_SERVER_PASSWORD, \
-    SQL_SERVER_WINDOWS_TABLE, SQL_SERVER_BUY_SELL_THRESHOLDS_TABLE
+    SQL_SERVER_WINDOWS_TABLE, SQL_SERVER_BUY_SELL_THRESHOLDS_TABLE, SQL_SERVER_TRADES_TABLE
+from pytrader.exchange.exchange import ExchangeName
+from pytrader.marketData.marketData_SQL import getSQLWindowDataAsJson, updateWindowData
+from pytrader.trade.tradingManager import determine_buy_sell_threshold_values
 
 
-def test_connection():
+def test_sql_connection():
+    """
+    Tests the connection to the SQL server.
+    """
     db_connection = mysql.connect(host=SQL_SERVER_HOST, database=SQL_SERVER_DATABASE, user=SQL_SERVER_USER,
                                   password=SQL_SERVER_PASSWORD)
     assert db_connection.is_connected()
 
 
-def test_sql_get_algo_windows():
+def test_sql_table_windows_data():
+    """
+    Tests the connection to the windows table and checks whether at least one thing exists
+    """
     db_connection = mysql.connect(host=SQL_SERVER_HOST, database=SQL_SERVER_DATABASE, user=SQL_SERVER_USER,
                                   password=SQL_SERVER_PASSWORD)
     cursor = db_connection.cursor()
     sql_command = f"SELECT * FROM {SQL_SERVER_WINDOWS_TABLE} WHERE 1"
+    cursor.execute(sql_command)
+    response = cursor.fetchall()
+    cursor.close()
+    assert len(response) > 0
+
+
+def test_sql_table_buy_sell_threshold_data():
+    """
+    Tests the connection to the buy sell threshold table and checks whether at least one thing exists
+    """
+    db_connection = mysql.connect(host=SQL_SERVER_HOST, database=SQL_SERVER_DATABASE, user=SQL_SERVER_USER,
+                                  password=SQL_SERVER_PASSWORD)
+    cursor = db_connection.cursor()
+    sql_command = f"SELECT * FROM {SQL_SERVER_BUY_SELL_THRESHOLDS_TABLE} WHERE 1"
+    cursor.execute(sql_command)
+    response = cursor.fetchall()
+    cursor.close()
+    assert len(response) > 0
+
+
+def test_sql_table_trades_data():
+    """
+    Tests the connection to the trade table and checks whether at least one thing exists
+    """
+    db_connection = mysql.connect(host=SQL_SERVER_HOST, database=SQL_SERVER_DATABASE, user=SQL_SERVER_USER,
+                                  password=SQL_SERVER_PASSWORD)
+    cursor = db_connection.cursor()
+    sql_command = f"SELECT * FROM {SQL_SERVER_TRADES_TABLE} WHERE 1"
     cursor.execute(sql_command)
     response = cursor.fetchall()
     cursor.close()
@@ -77,51 +111,70 @@ def test_sql_get_buy_sell_thresholds():
 
 
 def test_sql_get_buy_sell_threshold_values():
+    """
+    Tests that we can retrieve the buy and sell threshold values from the database.
+    """
     asset_name = "TSLA"
-    buy, sell = determineBuySellThresholdValues(asset_name)
+    buy, sell = determine_buy_sell_threshold_values(asset_name)
     assert buy is not None
     assert sell is not None
 
 
 def test_sql_get_buy_sell_threshold_values_creation():
+    """
+    Tests that we can create the buy and sell threshold values from the database if they do not exist. We then
+    delete afterwards.
+    """
     asset_name = "TSLAA"
-    buy, sell = determineBuySellThresholdValues(asset_name)
-    print(buy, sell)
+    buy, sell = determine_buy_sell_threshold_values(asset_name)
+    assert buy == 1.0
+    assert sell == -1.0
 
 
 # ========== TRADES ===============
 def test_sql_trades_get_trade():
+    """
+    Tests that we can retrieve a trade from the trade database.
+    """
     asset_name: str = "TEST"
-    order_type: str = "BUY"
+    order_type: OrderType = OrderType.BUY
     quantity: float = 1
     order_id: int = 1
     timestamp_str: str = "2022-04-28 03:44:03"
-    exchange: str = "ALPACA_PAPER"
+    exchange: ExchangeName = ExchangeName.ALPACA_PAPER
 
     sql_db: SQLDbTrades = SQLDbTrades()
-    trade_dao: SQLDbTradesDao = sql_db.getTradeByOrderId(order_id)
+    trade_dao: SQLDbTradesDao = sql_db.get_trade_by_order_id(order_id)
 
     assert trade_dao.name == asset_name
-    assert trade_dao.order_type == order_type
+    assert trade_dao.order_type == order_type.value
     assert trade_dao.quantity == quantity
     assert trade_dao.order_id == order_id
     assert str(trade_dao.timestamp) == timestamp_str
-    assert trade_dao.exchange == exchange
-
+    assert trade_dao.exchange == exchange.value
 
 def test_sql_trades_get_all_buy_trades():
+    """
+    Tests that we can retrieve all buy trades from the database.
+    """
     sql_db: SQLDbTrades = SQLDbTrades()
-    trades_dao: [SQLDbTradesDao] = sql_db.getAllBuyTrades()
+    trades_dao: [SQLDbTradesDao] = sql_db.get_all_buy_trades()
     assert len(trades_dao) == 1
 
 
 def test_sql_trades_get_all_sell_trades():
+    """
+    Tests that we can retrieve all sell trades from the database.
+    """
     sql_db: SQLDbTrades = SQLDbTrades()
-    trades_dao: [SQLDbTradesDao] = sql_db.getAllSellTrades()
+    trades_dao: [SQLDbTradesDao] = sql_db.get_all_sell_trades()
     assert len(trades_dao) == 1
 
 
 def test_sql_trades_commit_trade():
+    """
+    Tests that we are able to add a trade to the sql database.  We then delete it for cleanliness purposes.
+    """
     asset_name: str = "TEST"
     order_type: RequestType = RequestType.BUY
     quantity: float = 1.23
@@ -132,17 +185,17 @@ def test_sql_trades_commit_trade():
     # commit trade to db
     sql_db: SQLDbTrades = SQLDbTrades()
     dao: SQLDbTradesDao = SQLDbTradesDao(asset_name, order_type, quantity, order_id, timestamp, exchange)
-    response: SQLQueryResponseType = sql_db.commitTrade(dao)
+    response: SQLQueryResponseType = sql_db.commit_trade(dao)
     assert response == SQLQueryResponseType.SUCCESSFUL
 
     # get created trade from db
-    get_dao: SQLDbTradesDao = sql_db.getTradeByOrderId(order_id)
+    get_dao: SQLDbTradesDao = sql_db.get_trade_by_order_id(order_id)
     assert get_dao is not None
 
     # delete created trade from db
-    delete_successful = sql_db.deleteTrade(dao)
+    delete_successful = sql_db.delete_trade(dao)
     assert delete_successful == SQLQueryResponseType.SUCCESSFUL
 
     # make sure its gone
-    get_dao = sql_db.getTradeByOrderId(order_id)
+    get_dao = sql_db.get_trade_by_order_id(order_id)
     assert get_dao is None

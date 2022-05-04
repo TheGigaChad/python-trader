@@ -22,11 +22,12 @@ class Asset:
     """
 
     def __init__(self, name: str, asset_type: AssetType):
-        self.__name = name
-        self.__type = asset_type
+        self.__name: str = name
+        self.__type: AssetType = asset_type
         self.__holdings = None
         self.__value = None
-        self.__last_updated = None
+        self.__hold_type = None
+        self.__last_updated: datetime.datetime = datetime.datetime.min
 
     @property
     def holdings(self) -> float:
@@ -45,9 +46,9 @@ class Asset:
         return self.__type
 
     @property
-    def last_updated(self) -> datetime.time:
+    def last_updated(self) -> datetime.datetime:
         return self.__last_updated
 
     @last_updated.setter
-    def last_updated(self, val: datetime.time):
+    def last_updated(self, val: datetime.datetime):
         self.__last_updated = val

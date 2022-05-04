@@ -2,7 +2,7 @@ import datetime
 import enum
 import json
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
 
 import mysql.connector as mysql
 
@@ -109,7 +109,7 @@ class SQLDb:
         elif self.__db_type == SQLDbType.TRADES:
             return local_dir / 'data/trades.json'
 
-    def runSQLQuery(self, query: str, expect_output: Optional[bool] = True, params: Optional = None) -> tuple[any, any]:
+    def run_sql_query(self, query: str, expect_output: Optional[bool] = True, params: Optional = None) -> Tuple[any, any]:
         """
         Runs a specified query on the db and returns the response and column_names as a tuple
         """
@@ -157,7 +157,7 @@ class SQLDb:
         updates a single local store, with specified query data
         :param sql_query: sql query to be run
         """
-        response, column_names = self.runSQLQuery(query=sql_query)
+        response, column_names = self.run_sql_query(query=sql_query)
         sql_json = SQLResponseToJson(response, column_names)
         # empty the data
         open(self.__local_dir, 'w').close()

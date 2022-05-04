@@ -1,5 +1,5 @@
 import time
-from typing import Optional
+from typing import Optional, List
 
 from pydispatch import dispatcher
 
@@ -69,9 +69,9 @@ class ExchangeManager:
             while 1:
                 time.sleep(1)
                 # check the queue status
-                for order in self.__order_queue:
-                    if order.status == OrderStatus.QUEUED or order.status == OrderStatus.INIT:
-                        pass
+                # for order in self.__order_queue:
+                #     if order.status == OrderStatus.QUEUED or order.status == OrderStatus.INIT:
+                #         pass
                 # save queue state to db(?)
 
                 # commit trade
@@ -110,29 +110,48 @@ class ExchangeManager:
         # TODO - search exchange requests for unfulfilled requests and return as a list of Requests
         self.__order_queue = []
 
-    def __dispatcher_receive(self, message):
+    def __dispatcher_receive_order(self, request_type: RequestType, order: Order):
+        """
+        Handles the receiving of an order from the Trading Manager.
+        :param request_type: the request type from the Trading Manager.
+        :param order: the order request.
+        """
+        # add it to the queue if it is unique and send response back to Trading Manager.
+        if self.__is_new_order_unique(order):
+            print(f"EM received order for {order.asset.name}, adding to queue.")
+            order.status = OrderStatus.QUEUED
+            response = ResponseType.SUCCESSFUL
+            self.__add_request_to_queue(order)
+        else:
+            print(f"EM received a non-unique order for {order.asset.name}, cancelling the order.")
+            order.status = OrderStatus.CANCELLED
+            response = ResponseType.EXISTS
+        dispatcher.send(status=response, request_type=request_type, order=order, signal=self.__signal.value,
+                        sender=self.__sender.value)
+
+    def __dispatcher_receive_holdings(self, request_type: RequestType):
+        """
+        Handles the receiving of a request for holdings from the Trading Manager.
+        :param request_type: the request type from the Trading Manager.
+        """
+        holdings = self.get_assets()
+        status = ResponseType.SUCCESSFUL if holdings is not None else ResponseType.UNSUCCESSFUL
+        dispatcher.send(status=status, request_type=request_type, holdings=holdings, signal=self.__signal.value,
+                        sender=self.__sender.value)
+
+    def __dispatcher_receive(self, request_type, **kwargs):
         """
         handle dispatcher response.  This is used to communicate with the other Managers.
         """
-        if isinstance(message, Order):
-            # If we get an order, add it to the queue if it is unique.
-            if self.__is_new_order_unique(message):
-                print(f"EM received order for {message.asset.name}, adding to queue.")
-                message.status = OrderStatus.QUEUED
-                response = ResponseType.SUCCESSFUL
-                self.__add_request_to_queue(message)
-            else:
-                print(f"EM received a non-unique order for {message.asset.name}, cancelling the order.")
-                message.status = OrderStatus.CANCELLED
-                response = ResponseType.EXISTS
-            # response = self.request(asset=message.asset, request_type=message.type)
-            dispatcher.send(message=response, signal=self.__signal.value, sender=self.__sender.value)
+        if request_type == RequestType.BUY or request_type == RequestType.SELL:
+            self.__dispatcher_receive_order(request_type, kwargs.get("order"))
+        elif request_type == RequestType.HOLDINGS:
+            self.__dispatcher_receive_holdings(request_type)
 
     def request(self, asset: Asset, request_type: RequestType, request_params=None) -> ResponseType:
         """
         exchange request
         """
-
         #
         print(f"Request for {request_type.value} made for {asset.name}.")
         if asset.type == AssetType.PAPER_STOCK:
@@ -152,7 +171,7 @@ class ExchangeManager:
         self.__paper_stock_exchange.request(RequestType.UPDATE)
         self.__paper_crypto_exchange.request(RequestType.UPDATE)
 
-    def getAssets(self, asset_type: Optional[AssetType] = AssetType.UNKNOWN) -> list[Asset]:
+    def get_assets(self, asset_type: Optional[AssetType] = AssetType.UNKNOWN) -> List[Asset]:
         """
         determines the assets held based on the asset type.  This will return all assets if you don't specify.
         :param asset_type: type of asset you want specifically.
