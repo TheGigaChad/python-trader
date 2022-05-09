@@ -30,11 +30,13 @@ class Order:
     contains the data that gets passed to the request call.
     """
 
-    def __init__(self, order_type: OrderType, asset: Asset, qty: float):
+    def __init__(self, order_type: OrderType, asset: Asset):
         self.__type: OrderType = order_type
         self.__asset: Asset = asset
         self.__status: OrderStatus = OrderStatus.INIT
-        self.__qty: float = qty
+
+    def __repr__(self):
+        return f"Order(type: {self.__type}, asset: {self.__asset}, status: {self.__status})"
 
     @property
     def status(self) -> OrderStatus:
@@ -51,7 +53,3 @@ class Order:
     @property
     def asset(self) -> Asset:
         return self.__asset
-
-    @property
-    def qty(self) -> float:
-        return self.__qty

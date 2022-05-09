@@ -3,10 +3,10 @@ import json
 import websocket
 
 from pytrader.common.status import Status
-from pytrader.common.requests import ResponseType
+from pytrader.common.requests import ResponseStatus
 from pytrader.exchange.exchange import Exchange
 
-def listenForTradeUpdate(name, qty, id):
+def listen_for_trade_update(name, qty, id):
     """
     Once a buy or sell request has been made, we listen to make sure it is successful. \n
     :param trade_id: (string) id of the relevant trade
@@ -67,7 +67,7 @@ class ExchangeListener:
         print(message)
         ws.close()
 
-    def listen_for(self, request_data: json, exchange: Exchange) -> ResponseType:
+    def listen_for(self, request_data: json, exchange: Exchange) -> ResponseStatus:
         """
         When a request is made to the exchange that requires validation, we start a websocket listener to ensure it is
         successful.
@@ -78,11 +78,11 @@ class ExchangeListener:
             ws = websocket.WebSocketApp(exchange.websocket, on_open=self.on_open, on_message=self.on_message)
             self.__status = Status.RUNNING
             ws.run_forever()
-            print(f"Confirmation from {exchange.name.value} is {ResponseType.SUCCESSFUL.value}.")
+            print(f"Confirmation from {exchange.name.value} is {ResponseStatus.SUCCESSFUL.value}.")
             self.__status = Status.IDLE
-            return ResponseType.SUCCESSFUL
+            return ResponseStatus.SUCCESSFUL
 
         except Exception as e:
             print(e)
-            print(f"Confirmation from {exchange.name.value} is {ResponseType.UNSUCCESSFUL.value}.")
-            return ResponseType.UNSUCCESSFUL
+            print(f"Confirmation from {exchange.name.value} is {ResponseStatus.UNSUCCESSFUL.value}.")
+            return ResponseStatus.UNSUCCESSFUL

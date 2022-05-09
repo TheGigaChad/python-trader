@@ -31,7 +31,7 @@ def test_alpaca_paper_transfers_blocked():
 
 
 def test_exchange_paper_stock_account():
-    exchange = ExchangeManager(isTesting=True)
+    exchange = ExchangeManager(is_testing=True)
     cash = exchange.paper_stock_exchange.cash
     assert cash is not None and type(cash) == float
 
@@ -39,7 +39,7 @@ def test_exchange_paper_stock_account():
 @pytest.mark.xfail
 def test_exchange_paper_stock_buy():
     pass
-    exchange = ExchangeManager(isTesting=True)
+    exchange = ExchangeManager(is_testing=True)
     asset = Asset("TSLA", AssetType.PAPER_STOCK)
     exchange.request(asset=asset, request_type=RequestType.BUY)
 
