@@ -43,6 +43,10 @@ class ExchangeStockPaper(Exchange):
         if assets is not None:
             for asset in assets:
                 a: Asset = Asset(asset.symbol, AssetType.PAPER_STOCK)
+                a.qty = asset.qty
+                a.value = asset.market_value
+                a.trade_intent = self.__get_trade_intent(a)
+                print(asset)
                 holdings.append(a)
         return holdings
 

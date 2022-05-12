@@ -5,6 +5,7 @@ from typing import Optional, List, Tuple
 
 from yarl import URL
 
+from pytrader.algo.algo_tradeIntent import TradeIntent
 from pytrader.common.asset import Asset
 from pytrader.common.order import Order
 from pytrader.common.status import Status
@@ -192,6 +193,14 @@ class Exchange(ABC):
         determines the quantity of the asset.
         :param asset: the asset we are assessing.
         :return: the quantity.
+        """
+
+    @abstractmethod
+    def get_trade_intent(self, asset: Asset) -> TradeIntent:
+        """
+        Determines the trade intent based on SQL data.
+        @param asset:
+        @return:
         """
 
     def ignore_response(self) -> bool:

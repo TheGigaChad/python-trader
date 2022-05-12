@@ -145,6 +145,7 @@ class ExchangeManager:
             order.status = OrderStatus.QUEUED
             status = ResponseStatus.SUCCESSFUL
             self.__add_order_to_queue(order)
+
         else:
             print(f"EM received a non-unique order for {order.asset.name}, cancelling the order.")
             order.status = OrderStatus.CANCELLED

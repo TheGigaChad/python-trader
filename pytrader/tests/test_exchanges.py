@@ -1,13 +1,11 @@
-import datetime
-
 import alpaca_trade_api as tradeapi
 import pytest
-import pytz
 
 from pytrader.common.asset import Asset, AssetType
 from pytrader.common.requests import RequestType
 from pytrader.config import ALPACA_PAPER_KEY, ALPACA_PAPER_SECRET, ALPACA_PAPER_ADDRESS, ALPACA_PAPER_ACCOUNT_NUMBER
 from pytrader.exchange.exchangeManager import ExchangeManager
+
 
 # ALPACA TESTS
 def test_alpaca_paper_account():
