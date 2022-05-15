@@ -6,7 +6,7 @@ import mysql.connector as mysql
 from pytrader import cfg as cfg
 from pytrader.SQL.sqlDb.sqlDb import SQLQueryResponseType
 from pytrader.SQL.sqlDb.sqlDbTrades import SQLDbTrades, SQLDbTradesDao
-from pytrader.common.methods import timed
+from pytrader.common.wrappers import timed
 from pytrader.common.order import OrderType
 from pytrader.common.requests import RequestType
 from pytrader.exchange.exchange import ExchangeName

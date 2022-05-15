@@ -1,1 +1,1 @@
-from pytrader.common.methods import timed
+from pytrader.common.wrappers import timed

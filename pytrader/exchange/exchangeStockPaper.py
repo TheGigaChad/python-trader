@@ -5,6 +5,7 @@ from typing import List, Optional
 import alpaca_trade_api
 from yarl import URL
 
+from pytrader.algo.algo_tradeIntent import TradeIntent
 from pytrader.cfg import config as cfg
 from pytrader.common.asset import Asset, AssetType
 from pytrader.common.order import Order
@@ -45,8 +46,7 @@ class ExchangeStockPaper(Exchange):
                 a: Asset = Asset(asset.symbol, AssetType.PAPER_STOCK)
                 a.qty = asset.qty
                 a.value = asset.market_value
-                a.trade_intent = self.__get_trade_intent(a)
-                print(asset)
+                a.trade_intent = self.get_trade_intent(a)
                 holdings.append(a)
         return holdings
 
@@ -92,6 +92,10 @@ class ExchangeStockPaper(Exchange):
     def request_quantity(self, asset: Asset) -> float:
         # TODO - work
         return 1.0
+
+    def get_trade_intent(self, asset: Asset) -> TradeIntent:
+        # TODO - work
+        return TradeIntent.SHORT_TRADE
 
     def ignore_response(self) -> bool:
         is_market_open: bool = alpaca_trade_api.REST(cfg.ALPACA_PAPER_KEY, cfg.ALPACA_PAPER_SECRET,

@@ -37,9 +37,9 @@ def test_exchange_paper_stock_account():
 @pytest.mark.xfail
 def test_exchange_paper_stock_buy():
     pass
-    exchange = ExchangeManager(is_testing=True)
-    asset = Asset("TSLA", AssetType.PAPER_STOCK)
-    exchange.request(asset=asset, request_type=RequestType.BUY)
+    # exchange = ExchangeManager(is_testing=True)
+    # asset = Asset("TSLA", AssetType.PAPER_STOCK)
+    # exchange.request(asset=asset, request_type=RequestType.BUY)
 
 
 @pytest.mark.xfail
