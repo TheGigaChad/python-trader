@@ -3,62 +3,69 @@ import json
 
 import mysql.connector as mysql
 
+from pytrader import cfg as cfg
 from pytrader.SQL.sqlDb.sqlDb import SQLQueryResponseType
 from pytrader.SQL.sqlDb.sqlDbTrades import SQLDbTrades, SQLDbTradesDao
+from pytrader.common.wrappers import timed
 from pytrader.common.order import OrderType
 from pytrader.common.requests import RequestType
-from pytrader.config import SQL_SERVER_HOST, SQL_SERVER_DATABASE, SQL_SERVER_USER, SQL_SERVER_PASSWORD, \
-    SQL_SERVER_WINDOWS_TABLE, SQL_SERVER_BUY_SELL_THRESHOLDS_TABLE, SQL_SERVER_TRADES_TABLE
 from pytrader.exchange.exchange import ExchangeName
-from pytrader.marketData.marketData_SQL import getSQLWindowDataAsJson, updateWindowData
+from pytrader.marketData.marketData_SQL import get_sql_window_data_as_json, update_window_data
 from pytrader.trade.tradingManager import determine_buy_sell_threshold_values
 
 
+@timed
 def test_sql_connection():
     """
     Tests the connection to the SQL server.
     """
-    db_connection = mysql.connect(host=SQL_SERVER_HOST, database=SQL_SERVER_DATABASE, user=SQL_SERVER_USER,
-                                  password=SQL_SERVER_PASSWORD)
+    db_connection = mysql.connect(host=cfg.SQL_SERVER_HOST, database=cfg.SQL_SERVER_DATABASE, user=cfg.SQL_SERVER_USER,
+                                  password=cfg.SQL_SERVER_PASSWORD)
     assert db_connection.is_connected()
 
 
+@timed
 def test_sql_table_windows_data():
     """
     Tests the connection to the windows table and checks whether at least one thing exists
     """
-    db_connection = mysql.connect(host=SQL_SERVER_HOST, database=SQL_SERVER_DATABASE, user=SQL_SERVER_USER,
-                                  password=SQL_SERVER_PASSWORD)
+    # TODO - redo to use method
+    db_connection = mysql.connect(host=cfg.SQL_SERVER_HOST, database=cfg.SQL_SERVER_DATABASE, user=cfg.SQL_SERVER_USER,
+                                  password=cfg.SQL_SERVER_PASSWORD)
     cursor = db_connection.cursor()
-    sql_command = f"SELECT * FROM {SQL_SERVER_WINDOWS_TABLE} WHERE 1"
+    sql_command = f"SELECT * FROM {cfg.SQL_SERVER_WINDOWS_TABLE} WHERE 1"
     cursor.execute(sql_command)
     response = cursor.fetchall()
     cursor.close()
     assert len(response) > 0
 
 
+@timed
 def test_sql_table_buy_sell_threshold_data():
     """
     Tests the connection to the buy sell threshold table and checks whether at least one thing exists
     """
-    db_connection = mysql.connect(host=SQL_SERVER_HOST, database=SQL_SERVER_DATABASE, user=SQL_SERVER_USER,
-                                  password=SQL_SERVER_PASSWORD)
+    # TODO - redo to use method
+    db_connection = mysql.connect(host=cfg.SQL_SERVER_HOST, database=cfg.SQL_SERVER_DATABASE, user=cfg.SQL_SERVER_USER,
+                                  password=cfg.SQL_SERVER_PASSWORD)
     cursor = db_connection.cursor()
-    sql_command = f"SELECT * FROM {SQL_SERVER_BUY_SELL_THRESHOLDS_TABLE} WHERE 1"
+    sql_command = f"SELECT * FROM {cfg.SQL_SERVER_BUY_SELL_THRESHOLDS_TABLE} WHERE 1"
     cursor.execute(sql_command)
     response = cursor.fetchall()
     cursor.close()
     assert len(response) > 0
 
 
+@timed
 def test_sql_table_trades_data():
     """
     Tests the connection to the trade table and checks whether at least one thing exists
     """
-    db_connection = mysql.connect(host=SQL_SERVER_HOST, database=SQL_SERVER_DATABASE, user=SQL_SERVER_USER,
-                                  password=SQL_SERVER_PASSWORD)
+    # TODO - redo to use method
+    db_connection = mysql.connect(host=cfg.SQL_SERVER_HOST, database=cfg.SQL_SERVER_DATABASE, user=cfg.SQL_SERVER_USER,
+                                  password=cfg.SQL_SERVER_PASSWORD)
     cursor = db_connection.cursor()
-    sql_command = f"SELECT * FROM {SQL_SERVER_TRADES_TABLE} WHERE 1"
+    sql_command = f"SELECT * FROM {cfg.SQL_SERVER_TRADES_TABLE} WHERE 1"
     cursor.execute(sql_command)
     response = cursor.fetchall()
     cursor.close()
@@ -73,11 +80,13 @@ def is_json(item) -> bool:
     return True
 
 
+@timed
 def test_sql_window_data_to_json():
-    json_data = getSQLWindowDataAsJson()
+    json_data = get_sql_window_data_as_json()
     assert is_json(json_data)
 
 
+@timed
 def test_sql_save_window_data():
     json_file = "test_algo_windows.json"
 
@@ -90,7 +99,7 @@ def test_sql_save_window_data():
         assert len(infile.readlines()) == 0
         infile.close()
 
-    updateWindowData(file_name=json_file)
+    update_window_data(file_name=json_file)
 
     # make sure data is written
     with open(json_file, "r") as infile:
@@ -99,17 +108,7 @@ def test_sql_save_window_data():
         infile.close()
 
 
-def test_sql_get_buy_sell_thresholds():
-    db_connection = mysql.connect(host=SQL_SERVER_HOST, database=SQL_SERVER_DATABASE, user=SQL_SERVER_USER,
-                                  password=SQL_SERVER_PASSWORD)
-    cursor = db_connection.cursor()
-    sql_command = f"SELECT * FROM {SQL_SERVER_BUY_SELL_THRESHOLDS_TABLE} WHERE 1"
-    cursor.execute(sql_command)
-    response = cursor.fetchall()
-    cursor.close()
-    assert len(response) > 0
-
-
+@timed
 def test_sql_get_buy_sell_threshold_values():
     """
     Tests that we can retrieve the buy and sell threshold values from the database.
@@ -120,6 +119,7 @@ def test_sql_get_buy_sell_threshold_values():
     assert sell is not None
 
 
+@timed
 def test_sql_get_buy_sell_threshold_values_creation():
     """
     Tests that we can create the buy and sell threshold values from the database if they do not exist. We then
@@ -132,6 +132,7 @@ def test_sql_get_buy_sell_threshold_values_creation():
 
 
 # ========== TRADES ===============
+@timed
 def test_sql_trades_get_trade():
     """
     Tests that we can retrieve a trade from the trade database.
@@ -153,6 +154,8 @@ def test_sql_trades_get_trade():
     assert str(trade_dao.timestamp) == timestamp_str
     assert trade_dao.exchange == exchange.value
 
+
+@timed
 def test_sql_trades_get_all_buy_trades():
     """
     Tests that we can retrieve all buy trades from the database.
@@ -162,6 +165,7 @@ def test_sql_trades_get_all_buy_trades():
     assert len(trades_dao) == 1
 
 
+@timed
 def test_sql_trades_get_all_sell_trades():
     """
     Tests that we can retrieve all sell trades from the database.
@@ -171,6 +175,7 @@ def test_sql_trades_get_all_sell_trades():
     assert len(trades_dao) == 1
 
 
+@timed
 def test_sql_trades_commit_trade():
     """
     Tests that we are able to add a trade to the sql database.  We then delete it for cleanliness purposes.

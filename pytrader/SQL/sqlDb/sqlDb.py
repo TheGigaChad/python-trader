@@ -6,11 +6,10 @@ from typing import Optional, Tuple
 
 import mysql.connector as mysql
 
-from pytrader.config import SQL_SERVER_DATABASE, SQL_SERVER_HOST, SQL_SERVER_USER, SQL_SERVER_PASSWORD, \
-    SQL_SERVER_WINDOWS_TABLE, SQL_SERVER_BUY_SELL_THRESHOLDS_TABLE, SQL_SERVER_TRADES_TABLE
+import pytrader.cfg as cfg
 
 
-def SQLResponseToJson(sql_response: list, column_names: list) -> json:
+def sql_response_to_json(sql_response: list, column_names: list) -> json:
     """
     Converts SQL responses to JSON format
     :param sql_response: response data
@@ -74,31 +73,31 @@ class SQLDb:
     @property
     def table_name(self) -> str:
         if self.__db_type == SQLDbType.WINDOW:
-            return SQL_SERVER_WINDOWS_TABLE
+            return cfg.SQL_SERVER_WINDOWS_TABLE
         if self.__db_type == SQLDbType.BUY_SELL_THRESHOLDS:
-            return SQL_SERVER_BUY_SELL_THRESHOLDS_TABLE
+            return cfg.SQL_SERVER_BUY_SELL_THRESHOLDS_TABLE
         if self.__db_type == SQLDbType.TRADES:
-            return SQL_SERVER_TRADES_TABLE
+            return cfg.SQL_SERVER_TRADES_TABLE
 
     def __get_db_name(self) -> str:
         if self.__db_type == SQLDbType.WINDOW or self.__db_type == SQLDbType.BUY_SELL_THRESHOLDS \
                 or self.__db_type == SQLDbType.TRADES:
-            return SQL_SERVER_DATABASE
+            return cfg.SQL_SERVER_DATABASE
 
     def __get_user(self) -> str:
         if self.__db_type == SQLDbType.WINDOW or self.__db_type == SQLDbType.BUY_SELL_THRESHOLDS \
                 or self.__db_type == SQLDbType.TRADES:
-            return SQL_SERVER_USER
+            return cfg.SQL_SERVER_USER
 
     def __get_password(self) -> str:
         if self.__db_type == SQLDbType.WINDOW or self.__db_type == SQLDbType.BUY_SELL_THRESHOLDS \
                 or self.__db_type == SQLDbType.TRADES:
-            return SQL_SERVER_PASSWORD
+            return cfg.SQL_SERVER_PASSWORD
 
     def __get_host(self) -> str:
         if self.__db_type == SQLDbType.WINDOW or self.__db_type == SQLDbType.BUY_SELL_THRESHOLDS \
                 or self.__db_type == SQLDbType.TRADES:
-            return SQL_SERVER_HOST
+            return cfg.SQL_SERVER_HOST
 
     def __get_local_dir(self) -> Path:
         local_dir = Path(__file__).parent
@@ -109,7 +108,8 @@ class SQLDb:
         elif self.__db_type == SQLDbType.TRADES:
             return local_dir / 'data/trades.json'
 
-    def run_sql_query(self, query: str, expect_output: Optional[bool] = True, params: Optional = None) -> Tuple[any, any]:
+    def run_sql_query(self, query: str, expect_output: Optional[bool] = True, params: Optional = None) -> Tuple[any,
+                                                                                                                any]:
         """
         Runs a specified query on the db and returns the response and column_names as a tuple
         """
@@ -132,7 +132,7 @@ class SQLDb:
             print(f"sqlDb.runQuery failed. query: {query}, exception: {e}")
             return None, None
 
-    def runSQLQueryNoResponse(self, query, params) -> SQLQueryResponseType:
+    def run_sql_query_no_response(self, query, params) -> SQLQueryResponseType:
         """
         Runs a specified query on the db and returns the response and column_names as a tuple
         """
@@ -152,13 +152,13 @@ class SQLDb:
         finally:
             db_connection.close()
 
-    def updateLocalStore(self, sql_query: str):
+    def update_local_store(self, sql_query: str):
         """
         updates a single local store, with specified query data
         :param sql_query: sql query to be run
         """
         response, column_names = self.run_sql_query(query=sql_query)
-        sql_json = SQLResponseToJson(response, column_names)
+        sql_json = sql_response_to_json(response, column_names)
         # empty the data
         open(self.__local_dir, 'w').close()
 
@@ -168,16 +168,16 @@ class SQLDb:
             outfile.write(sql_json)
             outfile.close()
 
-    def updateLocalStores(self):
+    def update_local_stores(self):
         """
         Updates all local stores related to the db and updates the last_updated time.
         """
         if self.__db_type == SQLDbType.WINDOW:
             sql_query = f"SELECT * FROM {self.__table_name} WHERE 1"
-            self.updateLocalStore(sql_query)
+            self.update_local_store(sql_query)
 
         if self.__db_type == SQLDbType.BUY_SELL_THRESHOLDS:
             sql_query = f"SELECT * FROM {self.__table_name} WHERE 1"
-            self.updateLocalStore(sql_query)
+            self.update_local_store(sql_query)
 
         self.__last_updated = datetime.datetime.now()

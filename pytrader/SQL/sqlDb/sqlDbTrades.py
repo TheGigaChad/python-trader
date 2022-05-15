@@ -3,7 +3,7 @@ from typing import Optional
 
 from pytrader.SQL.sqlDb.Daos.sqlDbTradesDao import SQLDbTradesDao
 from pytrader.SQL.sqlDb.sqlDb import SQLDb, SQLDbType, SQLQueryResponseType
-from pytrader.common.requests import ResponseType, RequestType
+from pytrader.common.requests import ResponseStatus, RequestType
 from pytrader.config import SQL_SERVER_TRADES_TABLE_COLUMN_NAME, SQL_SERVER_TRADES_TABLE_COLUMN_ORDER_TYPE, \
     SQL_SERVER_TRADES_TABLE_COLUMN_ORDER_ID, SQL_SERVER_TRADES_TABLE_COLUMN_EXCHANGE, \
     SQL_SERVER_TRADES_TABLE_COLUMN_QUANTITY, SQL_SERVER_TRADES_TABLE_COLUMN_TIMESTAMP
@@ -122,7 +122,7 @@ class SQLDbTrades(SQLDb):
         params = (dao.name,
                   dao.order_type.name.__str__(), dao.quantity.__str__(), dao.order_id.__str__(), dao.timestamp.__str__(),
                   dao.exchange.name.__str__())
-        return self.runSQLQueryNoResponse(query, params)
+        return self.run_sql_query_no_response(query, params)
 
     def delete_trade(self, dao: SQLDbTradesDao) -> SQLQueryResponseType:
         """
@@ -133,7 +133,7 @@ class SQLDbTrades(SQLDb):
         """
         query = f"DELETE FROM {super().table_name} WHERE {self.column_order_id} = %s;"
         params = [dao.order_id]
-        return self.runSQLQueryNoResponse(query, params)
+        return self.run_sql_query_no_response(query, params)
 
     def is_order_id_unique(self, order_id: int) -> bool:
         """

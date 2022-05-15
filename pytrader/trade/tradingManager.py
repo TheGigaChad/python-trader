@@ -6,10 +6,11 @@ from typing import Optional, List, Tuple
 from pydispatch import dispatcher
 
 from pytrader.SQL.sqlDb.sqlDb import SQLDb, SQLDbType, SQLQueryResponseType
+from pytrader.algo.algo_tradeIntent import TradeIntent
 from pytrader.common.asset import Asset, AssetType
 from pytrader.common.dispatch import Sender, Signal
-from pytrader.common.order import Order, OrderType
-from pytrader.common.requests import ResponseType, RequestType
+from pytrader.common.order import Order, OrderType, OrderStatus
+from pytrader.common.requests import ResponseStatus, RequestType, ResponseType
 from pytrader.common.status import Status
 from pytrader.config import DEV_TEST_MODE
 
@@ -45,7 +46,7 @@ def determine_buy_sell_threshold_values(asset_name: Asset.name) -> Optional[Tupl
         print(f"tradingManager.determineBuySellThresholdValues - no db entry for {asset_name}. creating now...")
         query = f"INSERT INTO {db.table_name} (`name`, `buy`, `sell`, `last_updated`) VALUES (%s, '1.0','-1.0',%s);"
         params = [asset_name, datetime.datetime.now().__str__()]
-        success: SQLQueryResponseType = db.runSQLQueryNoResponse(query, params)
+        success: SQLQueryResponseType = db.run_sql_query_no_response(query, params)
         if success:
             rows, headers = db.run_sql_query(f"SELECT buy, sell FROM {db.table_name} WHERE name = '{asset_name}';")
             return rows[0][0], rows[0][1]
@@ -84,15 +85,24 @@ def calculate_quantity(asset: Asset, confidence: float) -> float:
     return 1.0
 
 
-def create_order(asset: Asset, confidence: float, order_type: OrderType) -> Order:
+def calculate_value(asset: Asset, qty: float) -> float:
+    """
+    calculates the value of the asset based on how much is owned.
+    @param asset:
+    @param qty:
+    @return:
+    """
+    return 1.0
+
+
+def create_order(asset: Asset, order_type: OrderType) -> Order:
     """
     create an order for the asset based on the confidence value. \n
-    :param confidence: float value relating to how good of a trade is available. (low = sell, buy = high)
     :param asset: the asset we are inspecting.
     :param order_type: the order type we are receiving.
     :return: boolean for whether we should buy/sell or ignore
     """
-    return Order(order_type=order_type, asset=asset, qty=calculate_quantity(asset, confidence))
+    return Order(order_type=order_type, asset=asset)
 
 
 class TradingManager:
@@ -107,6 +117,7 @@ class TradingManager:
         self.__assets: Optional[List[Asset]] = None
         self.__sender: Sender = Sender.TRADE_MANAGER
         self.__signal: Signal = Signal.TRADE_MANAGER
+        self.__exchange_manager_status: Status = Status.UNKNOWN
         self.start()
 
     @property
@@ -122,24 +133,31 @@ class TradingManager:
                            sender=Signal.EXCHANGE_MANAGER.value)
 
         # TODO - probe ALL exchanges for asset list
-        self.__get_owned_assets()
         self.__status = Status.STARTING
         print("TradingManager is waiting on Exchange Manager for the list of owned assets.")
         while self.__assets is None:
             # wait for the list of owned assets.
-            time.sleep(10)
+            time.sleep(3)
+            self.__get_owned_assets()
+        self.__status = Status.READY
+        while self.__exchange_manager_status != Status.RUNNING:
+            time.sleep(2)
+            self.request_exchange_manager_status()
+            print("TM re-requesting EM status")
         self.__status = Status.RUNNING
-        print(f"TradingManager is {self.__status}.")
+        print(f"TradingManager is {self.__status.name}.")
         while Status.RUNNING:
             # Use this as a rudimentary switch for testing
             if DEV_TEST_MODE:
                 # Loop buying some stocks for test purposes
-                time.sleep(5)
+                time.sleep(6)
                 order_list = ["TSLA", "AAPL", "AMAZON"]
                 x = random.randrange(3)
                 asset = Asset(order_list[x], AssetType.PAPER_STOCK)
-                order = Order(order_type=OrderType.BUY, asset=asset, qty=1)
-                dispatcher.send(request_type=RequestType.BUY, order=order, signal=self.__signal.value,
+                asset.trade_intent = TradeIntent.SHORT_TRADE
+                order = Order(order_type=OrderType.BUY, asset=asset)
+                print(f"request allowance for {asset}")
+                dispatcher.send(request_type=RequestType.ALLOWANCE, order=order, signal=self.__signal.value,
                                 sender=self.__sender.value)
             else:
                 if self.__assets is None or len(self.__assets) == 0 or not self.__owned_assets_already_inspected:
@@ -147,10 +165,11 @@ class TradingManager:
                     if asset is not None:
                         confidence: float = analyse_asset(asset)
                         order_type: OrderType = determine_buy_or_sell(confidence, asset)
-                        if order_type == OrderType.BUY or OrderType.SELL:
-                            order: Order = create_order(asset=asset, confidence=confidence, order_type=order_type)
-                            dispatcher.send(request_type=order.type, order=order, signal=self.__signal.value,
-                                            sender=self.__sender.value)
+                        if order_type == OrderType.BUY or order_type == OrderType.SELL:
+                            # we send a request for an allowance to the EM here, then on response of the allowance,
+                            # we send an order request.
+                            dispatcher.send(request_type=RequestType.ALLOWANCE, order_type=order_type, asset=asset,
+                                            signal=self.__signal.value, sender=self.__sender.value)
 
     def is_running(self) -> bool:
         """
@@ -180,29 +199,38 @@ class TradingManager:
         """
         return self.__status == Status.STOPPED
 
-    def __dispatcher_receive_order(self, status: ResponseType, asset: Asset):
+    def request_exchange_manager_status(self):
         """
-        Called when we receive an order response from the Exchange Manager.  We then process the ResponseType and append
+        Requests the status of the exchange manager.
+        """
+        dispatcher.send(request_type=RequestType.STATUS, signal=self.__signal.value, sender=self.__sender.value)
+
+    def __dispatcher_receive_order_response(self, status: ResponseStatus, order: Order):
+        """
+        Called when we receive an order request from the Exchange Manager.  We then process the ResponseType and append
         the Asset to the owned assets list. \n
         :param status: the status of the request made previously by the trade manager.  This should really only be
         successful.
-        :param asset: the asset we requested an order on.
+        :param order: the order we requested.
         """
         print(f'TM has received confirmation that the order was: {status.value}')
-        if status == ResponseType.SUCCESSFUL:
-            # on success, add to the owned assets.
+        if status == ResponseStatus.SUCCESSFUL:
+            # on success, add to the owned assets if the order status is queued.
+            if order.status != OrderStatus.QUEUED:
+                print(f"TradingManager.__dispatcher_receive_order the order for {order.asset.name} is {order.status}")
+                return
             if self.__assets is None:
-                self.__assets = List[asset]
+                self.__assets = List[order.asset]
             else:
-                self.__assets.append(asset)
-        elif status == ResponseType.UNSUCCESSFUL:
+                self.__assets.append(order.asset)
+        elif status == ResponseStatus.UNSUCCESSFUL:
             # TODO - what do we want to do if the purchase was unsuccessful?  Do we need more info?
             pass
-        elif status == ResponseType.MARKET_CLOSED:
+        elif status == ResponseStatus.MARKET_CLOSED:
             # TODO - should the TM decide whether to resend it, or should the decision be FINAL until completed?
             pass
 
-    def __dispatcher_receive_assets(self, status: ResponseType, assets: List[Asset]):
+    def __dispatcher_receive_assets_response(self, status: ResponseStatus, assets: List[Asset]):
         """
         Called when we receive an assets response from the Exchange Manager.  We then process the ResponseType and
         update the owned assets list. \n
@@ -210,27 +238,70 @@ class TradingManager:
         successful.
         :param assets: the assets we currently own.  Note, this doesn't include open orders.
         """
-        if status == ResponseType.SUCCESSFUL:
+        if status == ResponseStatus.SUCCESSFUL:
             # on success, add to the owned assets.
             if assets is not None:
                 self.__assets = assets
-        elif status == ResponseType.UNSUCCESSFUL:
+        elif status == ResponseStatus.UNSUCCESSFUL:
             # TODO - what do we want to do if the request was unsuccessful?  Do we need more info?
             pass
 
-    def __dispatcher_receive(self, status, request_type, **kwargs):
+    def __dispatcher_receive_allowance_response(self, status: ResponseStatus, order: Order):
+        """
+        Called when we receive an allowance response from the Exchange Manager.  We then process the ResponseType and
+        create an order based on the allotted funds. \n
+        :param status: the status of the request made previously by the trade manager.  This should really only be
+        successful.
+        """
+        if status == ResponseStatus.SUCCESSFUL:
+            # on success, request an order.
+            dispatcher.send(request_type=RequestType.TRADE, order=order, signal=self.__signal.value,
+                            sender=self.__sender.value)
+        elif status == ResponseStatus.UNSUCCESSFUL:
+            # TODO - what do we want to do if the request was unsuccessful?  Do we need more info?
+            #  Do we want to sell off?
+            print(f"TradingManager.__dispatcher_receive_allowance has been unsuccessful for {order.asset.name} "
+                  f"valued at {order.asset.value}")
+            pass
+        elif status == ResponseStatus.DENIED:
+            # maybe this is worth considering...
+            pass
+
+    def __dispatcher_receive_status_request(self):
+        """
+        Called when the Exchange Manager requests our status.
+        """
+        dispatcher.send(response_type=ResponseType.STATUS, manager_status=self.__status, signal=self.__signal.value,
+                        sender=self.__sender.value)
+
+    def __dispatcher_receive_status_response(self, status: Status):
+        """
+        Called when we receive a response from the Exchange Manager status request.
+        """
+
+        self.__exchange_manager_status = status
+
+    def __dispatcher_receive(self, status, **kwargs):
         """
         handle dispatcher response.  This is used to communicate with the other Managers.
         :param status: the status of the request
-        :param request_type: the type of request
-        :param obj: the object being returned
         """
-        if request_type == RequestType.BUY or request_type == RequestType.SELL:
-            # if the returned request_type was a buy or sell, handle that.
-            self.__dispatcher_receive_order(status, kwargs.get("order"))
-        elif request_type == RequestType.HOLDINGS:
-            # if the returned request_type was for holdings, update the list of owned assets.
-            self.__dispatcher_receive_assets(status, kwargs.get("holdings"))
+        request_type: RequestType = kwargs.get("request_type")
+        response_type: ResponseType = kwargs.get("response_type")
+        if request_type is not None:
+            if request_type == RequestType.STATUS:
+                self.__dispatcher_receive_status_request()
+        elif response_type is not None:
+            if response_type == ResponseType.TRADE:
+                self.__dispatcher_receive_order_response(status, kwargs.get("order"))
+            elif response_type == ResponseType.HOLDINGS:
+                self.__dispatcher_receive_assets_response(status, kwargs.get("holdings"))
+            elif response_type == ResponseType.ALLOWANCE:
+                self.__dispatcher_receive_allowance_response(status, kwargs.get("order"))
+            elif response_type == ResponseType.STATUS:
+                self.__dispatcher_receive_status_response(kwargs.get("manager_status"))
+        else:
+            print(f"TM.__dispatcher_receive received a bad request/response. both are none.")
 
     def __owned_assets_already_inspected(self) -> bool:
         """

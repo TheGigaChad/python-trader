@@ -1,7 +1,7 @@
 import datetime
 import enum
-import json
-from typing import Optional
+
+from pytrader.algo.algo_tradeIntent import TradeIntent
 
 
 class AssetType(enum.Enum):
@@ -24,18 +24,30 @@ class Asset:
     def __init__(self, name: str, asset_type: AssetType):
         self.__name: str = name
         self.__type: AssetType = asset_type
-        self.__holdings = None
-        self.__value = None
-        self.__hold_type = None
-        self.__last_updated: datetime.datetime = datetime.datetime.min
+        self.__qty: float = 0.0
+        self.__value: float = 0.0
+        self.__trade_intent: TradeIntent = TradeIntent.UNKNOWN
+        self.__last_updated: datetime.datetime = datetime.datetime.now()
+
+    def __repr__(self):
+        return f"Asset(name: {self.__name}, type: { self.__type}, qty: {self.__qty}, value: {self.__value}, " \
+               f"hold_type: {self.__trade_intent}, last_updated: {self.__last_updated})"
 
     @property
-    def holdings(self) -> float:
-        return self.__holdings
+    def qty(self) -> float:
+        return self.__qty
+
+    @qty.setter
+    def qty(self, q):
+        self.__qty = q
 
     @property
     def value(self) -> float:
         return self.__value
+
+    @value.setter
+    def value(self, v):
+        self.__value = v
 
     @property
     def name(self) -> str:
@@ -44,6 +56,14 @@ class Asset:
     @property
     def type(self) -> AssetType:
         return self.__type
+
+    @property
+    def trade_intent(self):
+        return self.__trade_intent
+
+    @trade_intent.setter
+    def trade_intent(self, intent: TradeIntent):
+        self.__trade_intent = intent
 
     @property
     def last_updated(self) -> datetime.datetime:

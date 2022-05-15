@@ -1,13 +1,18 @@
 import enum
 import json
 import random
-from typing import Optional, List
+from typing import Optional, List, Tuple
 
+from yarl import URL
+
+from pytrader.algo.algo_tradeIntent import TradeIntent
 from pytrader.common.asset import Asset
+from pytrader.common.order import Order
 from pytrader.common.status import Status
-from pytrader.common.requests import RequestType, ResponseType
+from pytrader.common.requests import RequestType, ResponseStatus
 from pytrader.config import ALPACA_PAPER_ADDRESS, ALPACA_PAPER_KEY, ALPACA_PAPER_SECRET, ALPACA_PAPER_WEBSOCKET
 import alpaca_trade_api
+from abc import ABC, abstractmethod
 
 
 class ExchangeName(enum.Enum):
@@ -34,8 +39,8 @@ class ExchangeRequestResponse:
     Response from the exchange relating to the request.  This contains a status and optional data
     """
 
-    def __init__(self, response_type: ResponseType, request_params=None, listen_required=False):
-        self.__type: ResponseType = response_type
+    def __init__(self, response_type: ResponseStatus, request_params=None, listen_required=False):
+        self.__type: ResponseStatus = response_type
         self.__listen_required: bool = listen_required
         self.__data = request_params
 
@@ -52,72 +57,21 @@ class ExchangeRequestResponse:
         return self.__listen_required
 
 
-class Exchange:
+class Exchange(ABC):
     """
     Class that holds the exchange type and name in order to classify what it can trade.
     """
 
     def __init__(self, name: ExchangeName, exchange_type: ExchangeType):
-        self.__status: Status = Status.UNKNOWN
         self.__name: ExchangeName = name
         self.__type: ExchangeType = exchange_type
-        self.__url: str = self.__getURL()
-        self.__key: str = self.__getKey()
-        self.__secret: str = self.__getSecret()
-        self.__websocket: str = self.__getWebsocket()
-        self.__cash: float = 0.0
-        self.__holdings: List[Asset] = []
-
-    def __ignoreResponse(self) -> bool:
-        """
-        Determines whether we ignore the response for the exchange, so we do not get trapped in a forever loop waiting
-        for a response.  This is onny valid for stock markets, as crypto is 24/7.
-        """
-        is_market_open: bool = alpaca_trade_api.REST(ALPACA_PAPER_KEY, ALPACA_PAPER_SECRET, ALPACA_PAPER_ADDRESS).\
-            get_clock().is_open
-        if (self.__type == ExchangeType.STOCK or self.__type == ExchangeType.PAPER_STOCK) and not is_market_open:
-            print("Market closed, ignoring response")
-            return True
-        else:
-            return False
-
-    def __getURL(self) -> str:
-        if self.__name == ExchangeName.ALPACA_PAPER:
-            return ALPACA_PAPER_ADDRESS
-
-    def __getKey(self) -> str:
-        if self.__name == ExchangeName.ALPACA_PAPER:
-            return ALPACA_PAPER_KEY
-
-    def __getSecret(self) -> str:
-        if self.__name == ExchangeName.ALPACA_PAPER:
-            return ALPACA_PAPER_SECRET
-
-    def __getCash(self) -> float:
-        if self.__name == ExchangeName.ALPACA_PAPER:
-            api = alpaca_trade_api.REST(self.__key, self.__secret, self.__url)
-            cash = float(api.get_account().cash)
-            api.close()
-            return cash
-
-    def __getHoldings(self) -> List[Asset]:
-        api = alpaca_trade_api.REST(self.__key, self.__secret, self.__url)
-        # print(api.list_assets())
-        api.close()
-        return []
-
-    def __getWebsocket(self) -> str:
-        if self.__name == ExchangeName.ALPACA_PAPER:
-            return ALPACA_PAPER_WEBSOCKET
-
-    def __init(self):
-        self.__status = Status.INIT
-        self.__cash = self.__getCash()
-        self.__holdings = self.__getHoldings()
-
-    def start(self):
-        self.__init()
-        self.__status = Status.RUNNING
+        self.__url: URL = self.get_url()
+        self.__key: str = self.get_key()
+        self.__secret: str = self.get_secret()
+        self.__websocket: str = self.get_websocket()
+        self.__cash: float = self.get_cash()
+        self.__holdings: List[Asset] = self.get_holdings()
+        self.__status: Status = Status.RUNNING
 
     @property
     def name(self):
@@ -147,60 +101,135 @@ class Exchange:
     def websocket(self) -> str:
         return self.__websocket
 
-    def __determineAllowance(self) -> float:
+    @abstractmethod
+    def get_url(self) -> URL:
+        """
+        Returns the URL connection URL of the exchange. \n
+        :return: URL.
+        """
+
+    @abstractmethod
+    def get_key(self) -> str:
+        """
+        Returns the connection key of the exchange. \n
+        :return: key.
+        """
+
+    @abstractmethod
+    def get_secret(self) -> str:
+        """
+        Returns the connection secret of the exchange. \n
+        :return: secret.
+        """
+
+    @abstractmethod
+    def get_cash(self) -> float:
+        """
+        Returns the amount of cash held within the exchange. \n
+        :return: cash value.
+        """
+
+    @abstractmethod
+    def get_holdings(self) -> List[Asset]:
+        """
+        Returns the holdings within the exchange. \n
+        :return: list of owned assets.
+        """
+
+    @abstractmethod
+    def get_websocket(self) -> str:
+        """
+        Returns the websocket for the exchange. \n
+        :return: websocket.
+        """
+
+    @abstractmethod
+    def determine_allowance(self) -> float:
         """
         returns an allowance for stock purchase
         """
-        return 1
 
-    def __paper_stock_buy(self, asset: Asset):
+    @abstractmethod
+    def buy(self, order: Order) -> bool:
         """
-        logic for a purchase of a paper stock.
+        the buy method for the exchange. \n
+        :param order: the order that we are making a transaction on.
+        :return: whether the buy was successful
         """
-        api = alpaca_trade_api.REST(self.__key, self.__secret, self.__url)
-        qty = self.__determineAllowance()
-        order_id = "1" + str(random.randrange(1, 10000000))
-        api.submit_order(symbol=asset.name, qty=qty, side="buy", type="market", client_order_id=order_id)
-        api.close()
 
-        return ExchangeRequestResponse(ResponseType.SUCCESSFUL, request_params=None,
-                                       listen_required=not self.__ignoreResponse())
-
-    def __buy(self, asset: Asset):
-        if self.__type == ExchangeType.PAPER_STOCK:
-            return self.__paper_stock_buy(asset)
-
-    def __paper_stock_sell(self, asset: Asset):
+    @abstractmethod
+    def buy_type(self):
         """
-        logic for a sale of a paper stock.
+        determines the buy-type of the asset.  For now only supports market.
+        :return: buy type
         """
-        api = alpaca_trade_api.REST(self.__key, self.__secret, self.__url)
-        qty = api.get_position(symbol=asset.name).qty
-        order_id = "1" + str(random.randrange(1, 10000000))
-        api.submit_order(symbol=asset.name, qty=qty, side="sell", type="market", client_order_id=order_id)
-        api.close()
 
-        return ExchangeRequestResponse(ResponseType.SUCCESSFUL, request_params=None,
-                                       listen_required=self.__ignoreResponse())
+    @abstractmethod
+    def sell(self, order: Order) -> bool:
+        """
+        the sell method for the exchange. \n
+        :param order: the order that we are making a transaction on.
+        :return: whether the buy was successful
+        """
 
-    def __sell(self, asset: Asset):
-        if self.__type == ExchangeType.PAPER_STOCK:
-            return self.__paper_stock_sell(asset)
+    @abstractmethod
+    def sell_type(self):
+        """
+        determines the sell-type of the asset.  For now only supports market.
+        :return: sell type
+        """
 
-    def request(self, asset: Asset, request_type: RequestType, request_params=None):
+    @abstractmethod
+    def request_allowance(self) -> float:
+        """
+        determines how much we alot the trade in terms of available funds.
+        :return: the allotted allowance
+        """
+        # TODO - we need to consider how to assess this.
+
+    @abstractmethod
+    def request_quantity(self, asset: Asset) -> float:
+        """
+        determines the quantity of the asset.
+        :param asset: the asset we are assessing.
+        :return: the quantity.
+        """
+
+    @abstractmethod
+    def get_trade_intent(self, asset: Asset) -> TradeIntent:
+        """
+        Determines the trade intent based on SQL data.
+        @param asset:
+        @return:
+        """
+
+    def ignore_response(self) -> bool:
+        """
+        Determines whether we ignore the response for the exchange, so we do not get trapped in a forever loop waiting
+        for a response.  This is only valid for stock markets, as crypto is 24/7.
+        """
+        return False
+
+    def get_stale_requests(self):
+        """
+        Finds any stale requests that may be lingering and re-adds them to the list.
+        """
+        pass
+
+    def request(self, order: Order, request_type: RequestType, request_params=None):
         if request_type == RequestType.INFO:
-            print(f"info requested for {asset.name} from the exchange {self.__name.value}")
+            print(f"info requested for {order.asset.name} from the exchange {self.__name.value}")
         elif request_type == RequestType.UPDATE:
             # TODO - exchange logic
-            return ExchangeRequestResponse(response_type=ResponseType.SUCCESSFUL)
+            return ExchangeRequestResponse(response_type=ResponseStatus.SUCCESSFUL)
         elif request_type == RequestType.INFO:
-            return ExchangeRequestResponse(response_type=ResponseType.SUCCESSFUL, request_params=request_params)
+            return ExchangeRequestResponse(response_type=ResponseStatus.SUCCESSFUL, request_params=request_params)
         elif request_type == RequestType.BUY:
-            return self.__buy(asset)
+            return self.__buy(order)
         elif request_type == RequestType.SELL:
-            return self.__sell(asset)
+            return self.__sell(order)
 
-    def assetToJSON(self, request_type: Optional[RequestType] = RequestType.UNDEFINED) -> json:
+    def asset_to_json(self, request_type: Optional[RequestType] = RequestType.UNDEFINED) -> json:
         # TODO - this needs a lot of work
         """
         returns the asset information as a JSON item to be easily readable
@@ -218,4 +247,5 @@ class Exchange:
             self.__holdings.append(asset)
         else:
             request_type = RequestType.UPDATE
-            self.request(request_type=request_type, request_params=self.assetToJSON(request_type=request_type))
+            self.request(request_type=request_type, request_params=self.asset_to_json(request_type=request_type))
+
