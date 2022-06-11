@@ -28,10 +28,11 @@ class Asset:
         self.__value: float = 0.0
         self.__trade_intent: TradeIntent = TradeIntent.UNKNOWN
         self.__last_updated: datetime.datetime = datetime.datetime.now()
+        self.__id: int = 0
 
     def __repr__(self):
-        return f"Asset(name: {self.__name}, type: { self.__type}, qty: {self.__qty}, value: {self.__value}, " \
-               f"hold_type: {self.__trade_intent}, last_updated: {self.__last_updated})"
+        return f"Asset(name: {self.__name}, type: {self.__type}, qty: {self.__qty}, value: {self.__value}, " \
+               f"hold_type: {self.__trade_intent}, last_updated: {self.__last_updated}, id: {self.__id})"
 
     @property
     def qty(self) -> float:
@@ -64,6 +65,14 @@ class Asset:
     @trade_intent.setter
     def trade_intent(self, intent: TradeIntent):
         self.__trade_intent = intent
+
+    @property
+    def id(self) -> int:
+        return self.__id
+
+    @id.setter
+    def id(self, v):
+        self.__id = v
 
     @property
     def last_updated(self) -> datetime.datetime:

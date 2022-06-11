@@ -1,18 +1,23 @@
+import datetime
 import time
 from typing import Optional, List
 
 from pydispatch import dispatcher
 
+from pytrader.SQL.sqlDb.sqlDb import SQLQueryResponseType
+from pytrader.SQL.sqlDbManager import SQLDbManager
 from pytrader.common.asset import Asset, AssetType
 from pytrader.common.dispatch import Sender, Signal
+from pytrader.common.log import Log
 from pytrader.common.order import Order, OrderStatus
 from pytrader.common.requests import ResponseType
 from pytrader.common.status import Status
 from pytrader.exchange.exchange import ExchangeRequestResponse
 from pytrader.exchange.exchange import RequestType, \
     ResponseStatus
-from pytrader.exchange.exchangeListener import ExchangeListener
 from pytrader.exchange.exchangeStockPaper import ExchangeStockPaper
+
+Log = Log(__file__)
 
 
 class ExchangeManager:
@@ -25,8 +30,8 @@ class ExchangeManager:
         self.__sender: Sender = Sender.EXCHANGE_MANAGER
         self.__signal: Signal = Signal.EXCHANGE_MANAGER
         self.__order_queue: List[Order] = []
+        self.__sql_manager: SQLDbManager = SQLDbManager()
         self.__paper_stock_exchange = ExchangeStockPaper()
-        self.__listener: ExchangeListener = ExchangeListener()
         self.__testing: bool = is_testing
         self.__trading_manager_status: Status = Status.UNKNOWN
         self.initialise()
@@ -46,6 +51,25 @@ class ExchangeManager:
     def __add_order_to_queue(self, order: Order):
         self.__order_queue.append(order)
 
+    def __fulfill(self, order: Order):
+        """
+        Fulfills the order to the correct exchange.
+        :param order: Order being requested.
+        """
+        # ensures the asset id is valid.
+        if order.asset.id == 0:
+            order.asset.id = self.__sql_manager.open_trades_db.generate_new_asset_id(order)
+        # fulfill to correct exchange
+        if order.asset.type == AssetType.PAPER_STOCK:
+            self.__paper_stock_exchange.fulfill(order)
+        # update the order
+        order.status = OrderStatus.PROCESSING
+        order.asset.last_updated = datetime.datetime.now()
+
+        # update SQL tables
+        response: SQLQueryResponseType = self.__sql_manager.open_trades_db.commit_trade(order)
+        Log.i(f'Order to {order.type.name} {order.asset.qty} {order.asset.name} was {response.name}.')
+
     def __init(self):
         self.__status = Status.INIT
         dispatcher.connect(self.__dispatcher_receive, signal=Signal.TRADE_MANAGER.value,
@@ -59,18 +83,20 @@ class ExchangeManager:
         if not self.__testing:
             while self.__trading_manager_status != Status.READY:
                 time.sleep(2)
-                print(f"EM re-requesting TM status. status is {self.__trading_manager_status}")
+                Log.i(f"initialise : re-requesting TM status. status is {self.__trading_manager_status}")
                 self.request_trading_manager_status()
             self.__status = Status.RUNNING
-            print(f"ExchangeManager is {self.__status.name}.")
+            Log.i(f"initialise: status is {self.__status.name}.")
             while 1:
                 time.sleep(1)
                 # check the queue status
+                # TODO - this should be reactive or something
                 for order in self.__order_queue:
                     if order.status == OrderStatus.QUEUED:
-                        print(order)
-                print("-------------")
-
+                        self.__fulfill(order)
+                    # elif (datetime.datetime.now() - order.asset.last_updated) >= USER_TRADE_TIME_DELTA:
+                    #     # TODO - if a trade has timed out, we must restart it and update relevant locations.
+                    #     pass
                 # save queue state to db(?)
 
                 # commit trade
@@ -139,15 +165,14 @@ class ExchangeManager:
         :param order: the order request.
         """
         # add it to the queue if it is unique and send response back to Trading Manager.
-        print(f"EM received order for {order.asset.name}, adding to queue.")
         if self.__is_new_order_unique(order):
-            print(f"{order.asset.name} is unique, adding to queue.")
+            Log.i(f"{order.asset.name} is unique, adding to queue.")
             order.status = OrderStatus.QUEUED
             status = ResponseStatus.SUCCESSFUL
             self.__add_order_to_queue(order)
 
         else:
-            print(f"EM received a non-unique order for {order.asset.name}, cancelling the order.")
+            Log.w(f"EM received a non-unique order for {order.asset.name}, cancelling the order.")
             order.status = OrderStatus.CANCELLED
             status = ResponseStatus.EXISTS
         dispatcher.send(status=status, response_type=ResponseType.TRADE, order=order, signal=self.__signal.value,
@@ -176,7 +201,8 @@ class ExchangeManager:
                     dispatcher.send(response_type=ResponseType.ALLOWANCE, status=ResponseStatus.SUCCESSFUL,
                                     order=order, signal=self.__signal.value, sender=self.__sender.value)
                     return
-            print(f"qty, value no good")
+            Log.w(f"__dispatcher_receive_allowance_request : bad order value ({order.asset.value})"
+                  f" or quantity ({order.asset.qty})")
             dispatcher.send(response_type=ResponseType.ALLOWANCE, status=ResponseStatus.UNSUCCESSFUL,
                             order=order, signal=self.__signal.value, sender=self.__sender.value)
 
@@ -213,17 +239,17 @@ class ExchangeManager:
             if response_type == ResponseType.STATUS:
                 self.__dispatcher_receive_status_response(kwargs.get("manager_status"))
         else:
-            print(f"TM.__dispatcher_receive received a bad request/response. both None.")
+            Log.w(f"__dispatcher_receive : received a bad request ({request_type}) and/or  response ({response_type}).")
 
     def request(self, asset: Asset, request_type: RequestType, request_params=None) -> ResponseStatus:
         """
         exchange request
         """
         #
-        print(f"Request for {request_type.value} made for {asset.name}.")
+        Log.i(f"Request for {request_type.value} made for {asset.name}.")
         if asset.type == AssetType.PAPER_STOCK:
             response: ExchangeRequestResponse = self.__paper_stock_exchange.request(asset, request_type, request_params)
-            print(f"Request for {request_type.value} made for {asset.name} is {response.type.value}.")
+            Log.i(f"Request for {request_type.value} made for {asset.name} is {response.type.value}.")
             if response.listen_required:
                 # validation required that exchange received request (needed for buys/sells).
                 # TODO - Add listener for trade confirmations

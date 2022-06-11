@@ -1,5 +1,5 @@
 import json
-from random import random
+import random
 from typing import List, Optional
 
 import alpaca_trade_api
@@ -8,9 +8,12 @@ from yarl import URL
 from pytrader.algo.algo_tradeIntent import TradeIntent
 from pytrader.cfg import config as cfg
 from pytrader.common.asset import Asset, AssetType
-from pytrader.common.order import Order
+from pytrader.common.log import Log
+from pytrader.common.order import Order, OrderType
 from pytrader.common.requests import ResponseStatus, RequestType
 from pytrader.exchange.exchange import Exchange, ExchangeName, ExchangeType, ExchangeRequestResponse
+
+Log = Log(__file__)
 
 
 class ExchangeStockPaper(Exchange):
@@ -57,16 +60,21 @@ class ExchangeStockPaper(Exchange):
         # TODO calc
         return 1.0
 
+    def fulfill(self, order: Order) -> ExchangeRequestResponse:
+        if order.type == OrderType.BUY:
+            return self.buy(order)
+        elif order.type == OrderType.SELL:
+            return self.sell(order)
+
     def buy(self, order: Order) -> ExchangeRequestResponse:
         api = alpaca_trade_api.REST(self.get_key(), self.get_secret(), self.get_url())
         qty = self.determine_allowance()
-        order_id = "1" + str(random.randrange(1, 10000000))
         api.submit_order(symbol=order.asset.name, qty=qty, side="buy", type=self.buy_type(),
-                         client_order_id=order_id)
+                         client_order_id=str(order.asset.id))
         api.close()
-
+        Log.i(f"Successfully bought {qty} {order.asset.name}")
         return ExchangeRequestResponse(ResponseStatus.SUCCESSFUL, request_params=None,
-                                       listen_required=not self.ignore_response())
+                                       listen_required=False)
 
     def buy_type(self) -> str:
         # TODO calc
@@ -75,12 +83,12 @@ class ExchangeStockPaper(Exchange):
     def sell(self, order: Order) -> ExchangeRequestResponse:
         api = alpaca_trade_api.REST(self.get_key(), self.get_secret(), self.get_url())
         qty = api.get_position(symbol=order.asset.name).qty
-        order_id = "2" + str(random.randrange(1, 10000000))
         api.submit_order(symbol=order.asset.name, qty=qty, side="sell", type=self.sell_type(),
-                         client_order_id=order_id)
+                         client_order_id=str(order.asset.id))
         api.close()
+        Log.i(f"Successfully sold {qty} {order.asset.name}")
         return ExchangeRequestResponse(ResponseStatus.SUCCESSFUL, request_params=None,
-                                       listen_required=not self.ignore_response())
+                                       listen_required=False)
 
     def sell_type(self) -> str:
         return "market"

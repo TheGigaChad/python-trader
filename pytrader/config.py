@@ -47,6 +47,15 @@ SQL_SERVER_TRADES_TABLE_COLUMN_ORDER_ID: str = "`order_id`"
 SQL_SERVER_TRADES_TABLE_COLUMN_TIMESTAMP: str = "`timestamp`"
 SQL_SERVER_TRADES_TABLE_COLUMN_EXCHANGE: str = "`exchange`"
 
+SQL_SERVER_OPEN_TRADES_TABLE = "algo_trade_open_trades"
+SQL_SERVER_OPEN_TRADES_COLUMN_NAME: str = "`name`"
+SQL_SERVER_OPEN_TRADES_COLUMN_ORDER_TYPE: str = "`order_type`"
+SQL_SERVER_OPEN_TRADES_COLUMN_TRADE_INTENT: str = "`trade_intent`"
+SQL_SERVER_OPEN_TRADES_COLUMN_QUANTITY: str = "`quantity`"
+SQL_SERVER_OPEN_TRADES_COLUMN_ORDER_ID: str = "`trade_id`"
+SQL_SERVER_OPEN_TRADES_COLUMN_LAST_UPDATED: str = "`last_updated`"
+
+
 # -----------
 # Model repos
 # -----------
@@ -61,6 +70,7 @@ USER_SHORT_TERM_TRADE_RATIO = 0.1
 USER_PAPER_MODE = True
 USER_USE_RISK_PARITY = False
 USER_USE_TRADER = True
+USER_TRADE_TIME_DELTA = 3600
 
 # --------------------
 # Developer set params

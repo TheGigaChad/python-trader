@@ -4,11 +4,15 @@ import json
 import mysql.connector as mysql
 
 from pytrader import cfg as cfg
+from pytrader.SQL.sqlDb.Daos.sqlDbOpenTradesDao import SQLDbOpenTradesDao
 from pytrader.SQL.sqlDb.sqlDb import SQLQueryResponseType
+from pytrader.SQL.sqlDb.sqlDbOpenTrades import SQLDbOpenTrades
 from pytrader.SQL.sqlDb.sqlDbTrades import SQLDbTrades, SQLDbTradesDao
-from pytrader.common.wrappers import timed
-from pytrader.common.order import OrderType
+from pytrader.algo.algo_tradeIntent import TradeIntent
+from pytrader.common.asset import Asset, AssetType
+from pytrader.common.order import OrderType, Order
 from pytrader.common.requests import RequestType
+from pytrader.common.wrappers import timed
 from pytrader.exchange.exchange import ExchangeName
 from pytrader.marketData.marketData_SQL import get_sql_window_data_as_json, update_window_data
 from pytrader.trade.tradingManager import determine_buy_sell_threshold_values
@@ -204,3 +208,60 @@ def test_sql_trades_commit_trade():
     # make sure its gone
     get_dao = sql_db.get_trade_by_order_id(order_id)
     assert get_dao is None
+
+
+@timed
+def test_sql_open_trades_commit_trade():
+    """
+    Tests that we are able to add a trade to the sql database.  We then delete it for cleanliness purposes.
+    """
+    asset_name: str = "TEST"
+    order_id: int = 0
+    # commit trade to db
+    sql_db: SQLDbOpenTrades = SQLDbOpenTrades()
+    order: Order = Order(OrderType.BUY, Asset(asset_name, AssetType.PAPER_STOCK))
+    order.asset.qty = 1.23
+    order.asset.id = order_id
+    order.asset.trade_intent = TradeIntent.SHORT_TRADE
+    response: SQLQueryResponseType = sql_db.commit_trade(order)
+    assert response == SQLQueryResponseType.SUCCESSFUL
+
+    # get created trade from db
+    get_dao: SQLDbOpenTradesDao = sql_db.get_trade_by_order_id(order_id)
+    assert get_dao is not None
+
+    # delete created trade from db
+    delete_successful = sql_db.delete_trade(order)
+    assert delete_successful == SQLQueryResponseType.SUCCESSFUL
+
+    # make sure its gone
+    get_dao = sql_db.get_trade_by_order_id(order_id)
+    assert get_dao is None
+
+
+@timed
+def test_sql_open_trades_unique_id():
+    asset_name: str = "TEST"
+    order_id: int = 0
+    # commit trade to db
+    sql_db: SQLDbOpenTrades = SQLDbOpenTrades()
+    order: Order = Order(OrderType.BUY, Asset(asset_name, AssetType.PAPER_STOCK))
+    order.asset.qty = 1.23
+    order.asset.id = order_id
+    order.asset.trade_intent = TradeIntent.SHORT_TRADE
+    response: bool = sql_db.is_order_id_unique(order.asset.id)
+    assert response
+
+
+@timed
+def test_sql_open_trades_generate_unique_id():
+    asset_name: str = "TEST"
+    order_id: int = 0
+    # commit trade to db
+    sql_db: SQLDbOpenTrades = SQLDbOpenTrades()
+    order: Order = Order(OrderType.BUY, Asset(asset_name, AssetType.PAPER_STOCK))
+    order.asset.qty = 1.23
+    order.asset.id = order_id
+    order.asset.trade_intent = TradeIntent.SHORT_TRADE
+    new_id: int = sql_db.generate_new_asset_id(order)
+    assert new_id != 0
