@@ -30,6 +30,7 @@ class SQLDbType(enum.Enum):
     WINDOW = 1
     BUY_SELL_THRESHOLDS = 2
     TRADES = 3
+    OPEN_TRADES = 4
 
 
 class SQLDbQueryType(enum.Enum):
@@ -78,25 +79,27 @@ class SQLDb:
             return cfg.SQL_SERVER_BUY_SELL_THRESHOLDS_TABLE
         if self.__db_type == SQLDbType.TRADES:
             return cfg.SQL_SERVER_TRADES_TABLE
+        if self.__db_type == SQLDbType.OPEN_TRADES:
+            return cfg.SQL_SERVER_OPEN_TRADES_TABLE
 
     def __get_db_name(self) -> str:
         if self.__db_type == SQLDbType.WINDOW or self.__db_type == SQLDbType.BUY_SELL_THRESHOLDS \
-                or self.__db_type == SQLDbType.TRADES:
+                or self.__db_type == SQLDbType.TRADES or self.__db_type == SQLDbType.OPEN_TRADES:
             return cfg.SQL_SERVER_DATABASE
 
     def __get_user(self) -> str:
         if self.__db_type == SQLDbType.WINDOW or self.__db_type == SQLDbType.BUY_SELL_THRESHOLDS \
-                or self.__db_type == SQLDbType.TRADES:
+                or self.__db_type == SQLDbType.TRADES or self.__db_type == SQLDbType.OPEN_TRADES:
             return cfg.SQL_SERVER_USER
 
     def __get_password(self) -> str:
         if self.__db_type == SQLDbType.WINDOW or self.__db_type == SQLDbType.BUY_SELL_THRESHOLDS \
-                or self.__db_type == SQLDbType.TRADES:
+                or self.__db_type == SQLDbType.TRADES or self.__db_type == SQLDbType.OPEN_TRADES:
             return cfg.SQL_SERVER_PASSWORD
 
     def __get_host(self) -> str:
         if self.__db_type == SQLDbType.WINDOW or self.__db_type == SQLDbType.BUY_SELL_THRESHOLDS \
-                or self.__db_type == SQLDbType.TRADES:
+                or self.__db_type == SQLDbType.TRADES or self.__db_type == SQLDbType.OPEN_TRADES:
             return cfg.SQL_SERVER_HOST
 
     def __get_local_dir(self) -> Path:

@@ -15,7 +15,7 @@ def main():
 
     # Update all model data
     model_manager = ModelManager()
-    model_manager.load()
+    model_manager.load_all()
 
     # start the managers
     exchange_thread = threading.Thread(target=ExchangeManager)

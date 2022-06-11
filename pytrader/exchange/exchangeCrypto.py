@@ -41,6 +41,9 @@ class ExchangeStockPaper(Exchange):
     def determine_allowance(self) -> float:
         pass
 
+    def fulfill(self, order: Order) -> ResponseStatus:
+        pass
+
     def buy(self, order: Order) -> ExchangeRequestResponse:
         pass
 

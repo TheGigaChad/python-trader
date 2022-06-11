@@ -2,9 +2,13 @@ import json
 
 import websocket
 
-from pytrader.common.status import Status
+from pytrader.common.log import Log
 from pytrader.common.requests import ResponseStatus
+from pytrader.common.status import Status
 from pytrader.exchange.exchange import Exchange
+
+Log = Log(__file__)
+
 
 def listen_for_trade_update(name, qty, id):
     """
@@ -33,6 +37,7 @@ class ExchangeListener:
     """
     Handles the management of the response from exchanges regarding whether the request was successful.
     """
+
     def __init__(self):
         self.__status: Status = Status.INIT
         self.__key: str = ""
@@ -83,6 +88,6 @@ class ExchangeListener:
             return ResponseStatus.SUCCESSFUL
 
         except Exception as e:
-            print(e)
-            print(f"Confirmation from {exchange.name.value} is {ResponseStatus.UNSUCCESSFUL.value}.")
+            Log.e(e)
+            Log.e(f"Confirmation from {exchange.name.value} is {ResponseStatus.UNSUCCESSFUL.value}.")
             return ResponseStatus.UNSUCCESSFUL

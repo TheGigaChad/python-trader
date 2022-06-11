@@ -1,6 +1,7 @@
 import datetime
 
 import pytrader.SQL.sqlDb as sqlDb
+from pytrader.SQL.sqlDb import sqlDbOpenTrades, sqlDbTrades, sqlDbWindows, sqlDbBuySellThresholds
 
 
 class SQLDbManager:
@@ -10,9 +11,10 @@ class SQLDbManager:
 
     def __init__(self):
         self.__last_updated: datetime.datetime = datetime.datetime.min
-        self.__windowDb: sqlDb.SQLDb = sqlDb.SQLDb(sqlDb.SQLDbType.WINDOW)
-        self.__buySellThresholdDb: sqlDb.SQLDb = sqlDb.SQLDb(sqlDb.SQLDbType.BUY_SELL_THRESHOLDS)
-        self.__tradesDb: sqlDb.SQLDb = sqlDb.SQLDb(sqlDb.SQLDbType.TRADES)
+        self.__windowDb: sqlDbWindows = sqlDbWindows.SQLDbWindows()
+        self.__buySellThresholdDb: sqlDbBuySellThresholds = sqlDbBuySellThresholds.SQLDbBuySellThresholds()
+        self.__tradesDb: sqlDbTrades = sqlDbTrades.SQLDbTrades()
+        self.__openTradesDb: sqlDbOpenTrades = sqlDbOpenTrades.SQLDbOpenTrades()
 
     @property
     def window_db(self):
@@ -25,6 +27,10 @@ class SQLDbManager:
     @property
     def trades_db(self):
         return self.__tradesDb
+
+    @property
+    def open_trades_db(self):
+        return self.__openTradesDb
 
     @property
     def last_updated(self):

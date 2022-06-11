@@ -1,18 +1,15 @@
 import enum
 import json
-import random
-from typing import Optional, List, Tuple
+from abc import ABC, abstractmethod
+from typing import Optional, List
 
 from yarl import URL
 
 from pytrader.algo.algo_tradeIntent import TradeIntent
 from pytrader.common.asset import Asset
 from pytrader.common.order import Order
-from pytrader.common.status import Status
 from pytrader.common.requests import RequestType, ResponseStatus
-from pytrader.config import ALPACA_PAPER_ADDRESS, ALPACA_PAPER_KEY, ALPACA_PAPER_SECRET, ALPACA_PAPER_WEBSOCKET
-import alpaca_trade_api
-from abc import ABC, abstractmethod
+from pytrader.common.status import Status
 
 
 class ExchangeName(enum.Enum):
@@ -146,7 +143,15 @@ class Exchange(ABC):
     @abstractmethod
     def determine_allowance(self) -> float:
         """
-        returns an allowance for stock purchase
+        Returns an allowance for stock purchase
+        """
+
+    @abstractmethod
+    def fulfill(self, order: Order) -> ResponseStatus:
+        """
+        Determines whether to buy or sell the stock.
+        @param order: The order for the asset.
+        @return: Status of the request.
         """
 
     @abstractmethod
@@ -248,4 +253,3 @@ class Exchange(ABC):
         else:
             request_type = RequestType.UPDATE
             self.request(request_type=request_type, request_params=self.asset_to_json(request_type=request_type))
-

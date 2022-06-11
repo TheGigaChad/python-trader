@@ -1,5 +1,8 @@
 from pytrader.SQL.sqlDb.sqlDb import SQLDb, SQLDbType
 
 
-class SQLDbWindows(SQLDb):
-    super().__init__(SQLDbType.BUY_SELL_THRESHOLDS)
+class SQLDbBuySellThresholds(SQLDb):
+
+    def __init__(self):
+        super().__init__(SQLDbType.BUY_SELL_THRESHOLDS)
+        self.__column_name: str = ""
