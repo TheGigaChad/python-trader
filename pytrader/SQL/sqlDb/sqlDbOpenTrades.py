@@ -139,6 +139,20 @@ class SQLDbOpenTrades(SQLDb):
         params = [order.asset.id]
         return self.run_sql_query_no_response(query, params)
 
+    def update_trade(self, order: Order) -> SQLQueryResponseType:
+        """
+        updates order within db with provided order data.
+        :param order: order to update
+        :return: response from sql query.
+        """
+        query = f"UPDATE `{super().table_name}` " \
+                f"SET {self.__column_quantity} = %s, {self.__column_timestamp} = %s " \
+                f"WHERE {self.__column_order_id} = %s;"
+        params = (order.asset.qty.__str__(), order.asset.last_updated.__str__(), order.asset.id.__str__())
+
+        return self.run_sql_query_no_response(query, params)
+
+
     def is_order_id_unique(self, order_id: int) -> bool:
         """
         determines whether the order id exists in the db.  this is used to ensure the order id is unique. \n
@@ -166,4 +180,3 @@ class SQLDbOpenTrades(SQLDb):
             return new_id
         else:
             return self.generate_new_asset_id(order)
-

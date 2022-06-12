@@ -3,7 +3,7 @@ from typing import Optional
 
 from pytrader.SQL.sqlDb.Daos.sqlDbTradesDao import SQLDbTradesDao
 from pytrader.SQL.sqlDb.sqlDb import SQLDb, SQLDbType, SQLQueryResponseType
-from pytrader.common.requests import ResponseStatus, RequestType
+from pytrader.common.requests import RequestType
 from pytrader.config import SQL_SERVER_TRADES_TABLE_COLUMN_NAME, SQL_SERVER_TRADES_TABLE_COLUMN_ORDER_TYPE, \
     SQL_SERVER_TRADES_TABLE_COLUMN_ORDER_ID, SQL_SERVER_TRADES_TABLE_COLUMN_EXCHANGE, \
     SQL_SERVER_TRADES_TABLE_COLUMN_QUANTITY, SQL_SERVER_TRADES_TABLE_COLUMN_TIMESTAMP
@@ -117,10 +117,11 @@ class SQLDbTrades(SQLDb):
         :return: whether the commit was successful or not
         """
         query = f"INSERT INTO `{super().table_name}` ({self.__column_name}, {self.__column_order_type}, " \
-                  f"{self.__column_quantity}, {self.__column_order_id}, {self.__column_timestamp}, {self.__column_exchange}) " \
-                  f"VALUES (%s, %s, %s, %s, %s, %s);"
+                f"{self.__column_quantity}, {self.__column_order_id}, {self.__column_timestamp}, {self.__column_exchange}) " \
+                f"VALUES (%s, %s, %s, %s, %s, %s);"
         params = (dao.name,
-                  dao.order_type.name.__str__(), dao.quantity.__str__(), dao.order_id.__str__(), dao.timestamp.__str__(),
+                  dao.order_type.name.__str__(), dao.quantity.__str__(), dao.order_id.__str__(),
+                  dao.timestamp.__str__(),
                   dao.exchange.name.__str__())
         return self.run_sql_query_no_response(query, params)
 
