@@ -152,6 +152,7 @@ class SQLDbOpenTrades(SQLDb):
 
         return self.run_sql_query_no_response(query, params)
 
+
     def is_order_id_unique(self, order_id: int) -> bool:
         """
         determines whether the order id exists in the db.  this is used to ensure the order id is unique. \n

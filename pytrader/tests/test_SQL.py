@@ -266,7 +266,6 @@ def test_sql_open_trades_generate_unique_id():
     new_id: int = sql_db.generate_new_asset_id(order)
     assert new_id != 0
 
-
 @timed
 def test_sql_open_trades_update_order():
     asset_name: str = "TEST"
