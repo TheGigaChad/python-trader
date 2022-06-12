@@ -12,7 +12,7 @@ from pytrader.common.log import Log
 from pytrader.common.order import Order, OrderStatus
 from pytrader.common.requests import ResponseType
 from pytrader.common.status import Status
-from pytrader.exchange.exchange import ExchangeRequestResponse
+from pytrader.config import USER_OPEN_TRADE_TIME_DELTA
 from pytrader.exchange.exchange import RequestType, \
     ResponseStatus
 from pytrader.exchange.exchangeStockPaper import ExchangeStockPaper
@@ -49,16 +49,32 @@ class ExchangeManager:
         return self.crypto_exchange
 
     def __add_order_to_queue(self, order: Order):
+        """
+        Adds the order to the order queue.
+        :param order: order to be added.
+        """
         self.__order_queue.append(order)
 
-    def __fulfill(self, order: Order):
+    def __generate_new_trade_id(self, order: Order) -> Order:
+        """
+        Generates a unique id based on existing ids within the open and trades dbs. \n
+        :param order: the order we are generating an ID for.
+        :return: order with updated ID.
+        """
+        if order.asset.id == 0:
+            order.asset.id = self.__sql_manager.open_trades_db.generate_new_asset_id(order)
+            while not self.__sql_manager.trades_db.is_order_id_unique(order.asset.id):
+                order.asset.id = self.__sql_manager.open_trades_db.generate_new_asset_id(order)
+        return order
+
+    def __fulfill_order(self, order: Order):
         """
         Fulfills the order to the correct exchange.
         :param order: Order being requested.
         """
         # ensures the asset id is valid.
-        if order.asset.id == 0:
-            order.asset.id = self.__sql_manager.open_trades_db.generate_new_asset_id(order)
+        order = self.__generate_new_trade_id(order)
+
         # fulfill to correct exchange
         if order.asset.type == AssetType.PAPER_STOCK:
             self.__paper_stock_exchange.fulfill(order)
@@ -69,6 +85,44 @@ class ExchangeManager:
         # update SQL tables
         response: SQLQueryResponseType = self.__sql_manager.open_trades_db.commit_trade(order)
         Log.i(f'Order to {order.type.name} {order.asset.qty} {order.asset.name} was {response.name}.')
+
+    def __reorder(self, order: Order):
+        """
+        Updates the order within the pending trades db.
+        :param order: the order to be updated.
+        """
+        Log.w(f"Order for {order.asset.name} has timed out while processing. Let's re-order it.")
+        # TODO - we need to reorder to correct exchange
+        if order.asset.type == AssetType.PAPER_STOCK:
+            pass
+        elif order.asset.type == AssetType.STOCK:
+            pass
+        elif order.asset.type == AssetType.PAPER_CRYPTO:
+            pass
+        elif order.asset.type == AssetType.CRYPTO:
+            pass
+        elif order.asset.type == AssetType.FUND:
+            pass
+
+        order.asset.last_updated = datetime.datetime.now()
+        self.__sql_manager.open_trades_db.update_trade(order)
+
+    @staticmethod
+    def __order_failed_or_timed_out(order: Order) -> bool:
+        """
+        returns whether the order has been unsuccessful or has timed out. \n
+        :param order: the order to be checked.
+        :return: the success of the transaction on the exchange.
+        """
+        if (datetime.datetime.now() - order.asset.last_updated).seconds >= USER_OPEN_TRADE_TIME_DELTA \
+                and order.status == OrderStatus.PROCESSING:
+            return True
+        elif order.status == OrderStatus.CANCELLED:
+            return True
+        elif order.status == OrderStatus.FAILED:
+            return True
+        else:
+            return False
 
     def __init(self):
         self.__status = Status.INIT
@@ -93,15 +147,11 @@ class ExchangeManager:
                 # TODO - this should be reactive or something
                 for order in self.__order_queue:
                     if order.status == OrderStatus.QUEUED:
-                        self.__fulfill(order)
-                    # elif (datetime.datetime.now() - order.asset.last_updated) >= USER_TRADE_TIME_DELTA:
-                    #     # TODO - if a trade has timed out, we must restart it and update relevant locations.
-                    #     pass
-                # save queue state to db(?)
-
-                # commit trade
-
-                # respond to trade manager on what we did
+                        self.__fulfill_order(order)
+                    elif order.status == OrderStatus.FILLED:
+                        self.__order_queue.remove(order)
+                    elif self.__order_failed_or_timed_out(order):
+                        self.__reorder(order)
 
     def is_running(self) -> bool:
         """
@@ -240,28 +290,6 @@ class ExchangeManager:
                 self.__dispatcher_receive_status_response(kwargs.get("manager_status"))
         else:
             Log.w(f"__dispatcher_receive : received a bad request ({request_type}) and/or  response ({response_type}).")
-
-    def request(self, asset: Asset, request_type: RequestType, request_params=None) -> ResponseStatus:
-        """
-        exchange request
-        """
-        #
-        Log.i(f"Request for {request_type.value} made for {asset.name}.")
-        if asset.type == AssetType.PAPER_STOCK:
-            response: ExchangeRequestResponse = self.__paper_stock_exchange.request(asset, request_type, request_params)
-            Log.i(f"Request for {request_type.value} made for {asset.name} is {response.type.value}.")
-            if response.listen_required:
-                # validation required that exchange received request (needed for buys/sells).
-                # TODO - Add listener for trade confirmations
-                return self.__listener.listen_for(response.data, self.__paper_stock_exchange)
-            else:
-                return response.type
-
-    def update(self):
-        """
-        Call to update data on all exchanges.
-        """
-        self.__paper_stock_exchange.request(RequestType.UPDATE)
 
     def get_assets(self, asset_type: Optional[AssetType] = None) -> List[Asset]:
         """
