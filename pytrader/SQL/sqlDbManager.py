@@ -1,8 +1,6 @@
 import datetime
 
-
-import pytrader.SQL.sqlDb as sqlDb
-
+from pytrader.SQL.sqlDb import sqlDbWindows, sqlDbBuySellThresholds, sqlDbTrades, sqlDbOpenTrades
 
 
 class SQLDbManager:

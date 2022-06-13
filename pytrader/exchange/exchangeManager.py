@@ -4,12 +4,14 @@ from typing import Optional, List
 
 from pydispatch import dispatcher
 
+from pytrader.SQL.sqlDb.Daos.sqlDbOpenTradesDao import SQLDbOpenTradesDao
 from pytrader.SQL.sqlDb.sqlDb import SQLQueryResponseType
 from pytrader.SQL.sqlDbManager import SQLDbManager
+from pytrader.algo.algo_tradeIntent import TradeIntent
 from pytrader.common.asset import Asset, AssetType
 from pytrader.common.dispatch import Sender, Signal
 from pytrader.common.log import Log
-from pytrader.common.order import Order, OrderStatus
+from pytrader.common.order import Order, OrderStatus, OrderType
 from pytrader.common.requests import ResponseType
 from pytrader.common.status import Status
 from pytrader.config import USER_OPEN_TRADE_TIME_DELTA
@@ -55,7 +57,6 @@ class ExchangeManager:
         """
         self.__order_queue.append(order)
 
-
     def __generate_new_trade_id(self, order: Order) -> Order:
         """
         Generates a unique id based on existing ids within the open and trades dbs. \n
@@ -68,16 +69,13 @@ class ExchangeManager:
                 order.asset.id = self.__sql_manager.open_trades_db.generate_new_asset_id(order)
         return order
 
-    def __fulfill(self, order: Order):
+    def __fulfill_order(self, order: Order):
         """
         Fulfills the order to the correct exchange.
         :param order: Order being requested.
         """
         # ensures the asset id is valid.
         order = self.__generate_new_trade_id(order)
-
-        if order.asset.id == 0:
-            order.asset.id = self.__sql_manager.open_trades_db.generate_new_asset_id(order)
         # fulfill to correct exchange
         if order.asset.type == AssetType.PAPER_STOCK:
             self.__paper_stock_exchange.fulfill(order)
@@ -89,10 +87,20 @@ class ExchangeManager:
         response: SQLQueryResponseType = self.__sql_manager.open_trades_db.commit_trade(order)
         Log.i(f'Order to {order.type.name} {order.asset.qty} {order.asset.name} was {response.name}.')
 
+    def __remove_order(self, order: Order):
+        """
+        removes the order from the order queue and the open trades db and then adds it to the trade db. \n
+        :param order: order being removed/added to trade db
+        """
+        response: SQLQueryResponseType = self.__sql_manager.trades_db.commit_trade(order)
+        if response == SQLQueryResponseType.SUCCESSFUL:
+            response = self.__sql_manager.open_trades_db.delete_trade(order)
+            if response == SQLQueryResponseType.SUCCESSFUL:
+                self.__order_queue.remove(order)
 
     def __reorder(self, order: Order):
         """
-        Updates the order within the pending trades db.
+        Updates the order within the pending trade db.
         :param order: the order to be updated.
         """
         Log.w(f"Order for {order.asset.name} has timed out while processing. Let's re-order it.")
@@ -125,6 +133,8 @@ class ExchangeManager:
             return True
         elif order.status == OrderStatus.FAILED:
             return True
+        elif order.status == OrderStatus.REJECTED:
+            return True
         else:
             return False
 
@@ -135,7 +145,7 @@ class ExchangeManager:
 
     def initialise(self):
         self.__init()
-        self.__get_stale_requests()
+        self.__get_existing_open_trades()
         self.request_trading_manager_status()
         self.__status = Status.READY
         if not self.__testing:
@@ -144,29 +154,17 @@ class ExchangeManager:
                 Log.i(f"initialise : re-requesting TM status. status is {self.__trading_manager_status}")
                 self.request_trading_manager_status()
             self.__status = Status.RUNNING
-            Log.i(f"initialise: status is {self.__status.name}.")
-            while 1:
+            while self.is_running():
                 time.sleep(1)
-                # check the queue status
                 # TODO - this should be reactive or something
                 for order in self.__order_queue:
+                    print(order)
                     if order.status == OrderStatus.QUEUED:
-
                         self.__fulfill_order(order)
                     elif order.status == OrderStatus.FILLED:
-                        self.__order_queue.remove(order)
+                        self.__remove_order(order)
                     elif self.__order_failed_or_timed_out(order):
                         self.__reorder(order)
-
-                        self.__fulfill(order)
-                    # elif (datetime.datetime.now() - order.asset.last_updated) >= USER_TRADE_TIME_DELTA:
-                    #     # TODO - if a trade has timed out, we must restart it and update relevant locations.
-                    #     pass
-                # save queue state to db(?)
-
-                # commit trade
-
-                # respond to trade manager on what we did
 
     def is_running(self) -> bool:
         """
@@ -211,18 +209,73 @@ class ExchangeManager:
         """
         for order in self.__order_queue:
             if order.asset.name == new_order.asset.name:
-                if order.status == OrderStatus.PROCESSING or order.status == OrderStatus.FILLED or \
-                        order.status == OrderStatus.QUEUED:
+                if order.status == OrderStatus.PROCESSING or order.status == OrderStatus.QUEUED:
                     return False
         return True
 
-    def __get_stale_requests(self):
+    def __update_order_status_from_exchange(self, order) -> Order:
         """
-        returns all stale requests still sitting in exchanges.  This should be run on startup.
+        updates the order status based on whether the exchange has filled the order, received it or not.
+        :param order: the order being evaluated.
+        :return: updated order.
         """
-        # TODO - search exchange requests for unfulfilled requests and return as a list of Requests
-        # self.__order_queue = []
-        pass
+        if order.asset.type == AssetType.PAPER_STOCK:
+            return self.__paper_stock_exchange.update_order_status(order)
+        elif order.asset.type == AssetType.STOCK:
+            pass
+        elif order.asset.type == AssetType.PAPER_CRYPTO:
+            pass
+        elif order.asset.type == AssetType.CRYPTO:
+            pass
+        elif order.asset.type == AssetType.FUND:
+            pass
+        else:
+            Log.w(f"Attempted to update the order status for {order} but cannot evaluate correct asset type.")
+            return order
+
+    def __evaluate_order_value(self, order) -> float:
+        """
+        evaluates the current value of the asset.
+        :param order: order being evaluated
+        :return: value
+        """
+        value = 0.0
+        if order.asset.type == AssetType.PAPER_STOCK:
+            value = self.__paper_stock_exchange.determine_value(order.asset)
+        else:
+            pass
+        return value
+
+    def __open_trade_dao_to_order(self, open_trade: SQLDbOpenTradesDao) -> Order:
+        """
+        creates an order from the dao object.
+        :param open_trade: dao object
+        :return: order.
+        """
+        order: Order = Order(OrderType(open_trade.order_type),
+                             Asset(name=open_trade.name, asset_type=AssetType(open_trade.asset_type)))
+        order.asset.id = open_trade.order_id
+        order.asset.qty = open_trade.quantity
+        order.asset.trade_intent = TradeIntent(open_trade.trade_intent)
+        order.asset.last_updated = open_trade.timestamp
+        order.asset.value = self.__evaluate_order_value(order)
+        return order
+
+    def __get_existing_open_trades(self):
+        """
+        Finds all open trades within the exchanges and appends them to the queue if they are not filled yet. \n
+        """
+        if self.__testing:
+            return
+        open_trades: [SQLDbOpenTradesDao] = self.__sql_manager.open_trades_db.get_all_trades()
+        for open_trade in open_trades:
+            new_order: Order = self.__open_trade_dao_to_order(open_trade)
+            self.__update_order_status_from_exchange(new_order)
+            if self.__is_new_order_unique(new_order):
+                self.__order_queue.append(new_order)
+            else:
+                Log.w(f"__get_stale_requests has found order duplicate for order {new_order}")
+        Log.i(f"found {len(self.__order_queue)} existing orders. They have been added to the order queue successfully.")
 
     def __dispatcher_receive_order_request(self, order: Order):
         """
@@ -305,22 +358,6 @@ class ExchangeManager:
                 self.__dispatcher_receive_status_response(kwargs.get("manager_status"))
         else:
             Log.w(f"__dispatcher_receive : received a bad request ({request_type}) and/or  response ({response_type}).")
-
-    def request(self, asset: Asset, request_type: RequestType, request_params=None) -> ResponseStatus:
-        """
-        exchange request
-        """
-        #
-        Log.i(f"Request for {request_type.value} made for {asset.name}.")
-        if asset.type == AssetType.PAPER_STOCK:
-            response: ExchangeRequestResponse = self.__paper_stock_exchange.request(asset, request_type, request_params)
-            Log.i(f"Request for {request_type.value} made for {asset.name} is {response.type.value}.")
-            if response.listen_required:
-                # validation required that exchange received request (needed for buys/sells).
-                # TODO - Add listener for trade confirmations
-                return self.__listener.listen_for(response.data, self.__paper_stock_exchange)
-            else:
-                return response.type
 
     def update(self):
         """

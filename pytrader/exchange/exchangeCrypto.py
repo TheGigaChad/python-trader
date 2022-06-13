@@ -1,13 +1,11 @@
 import json
-from random import random
 from typing import List, Optional
 
-import alpaca_trade_api
 from yarl import URL
 
-from pytrader.cfg import config as cfg
+from pytrader.algo.algo_tradeIntent import TradeIntent
 from pytrader.common.asset import Asset
-from pytrader.common.order import Order
+from pytrader.common.order import Order, OrderStatus
 from pytrader.common.requests import ResponseStatus, RequestType
 from pytrader.exchange.exchange import Exchange, ExchangeName, ExchangeType, ExchangeRequestResponse
 
@@ -60,6 +58,15 @@ class ExchangeStockPaper(Exchange):
         pass
 
     def request_quantity(self, asset: Asset) -> float:
+        pass
+
+    def get_trade_intent(self, asset: Asset) -> TradeIntent:
+        pass
+
+    def update_order_status(self, order: Order) -> OrderStatus:
+        pass
+
+    def determine_value(self, asset: Asset) -> float:
         pass
 
     def ignore_response(self) -> bool:

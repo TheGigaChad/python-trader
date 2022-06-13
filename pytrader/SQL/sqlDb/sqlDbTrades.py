@@ -3,9 +3,10 @@ from typing import Optional
 
 from pytrader.SQL.sqlDb.Daos.sqlDbTradesDao import SQLDbTradesDao
 from pytrader.SQL.sqlDb.sqlDb import SQLDb, SQLDbType, SQLQueryResponseType
+from pytrader.common.order import Order
 from pytrader.common.requests import RequestType
 from pytrader.config import SQL_SERVER_TRADES_TABLE_COLUMN_NAME, SQL_SERVER_TRADES_TABLE_COLUMN_ORDER_TYPE, \
-    SQL_SERVER_TRADES_TABLE_COLUMN_ORDER_ID, SQL_SERVER_TRADES_TABLE_COLUMN_EXCHANGE, \
+    SQL_SERVER_TRADES_TABLE_COLUMN_ORDER_ID, SQL_SERVER_TRADES_TABLE_COLUMN_ASSET_TYPE, \
     SQL_SERVER_TRADES_TABLE_COLUMN_QUANTITY, SQL_SERVER_TRADES_TABLE_COLUMN_TIMESTAMP
 
 
@@ -21,7 +22,7 @@ class SQLDbTrades(SQLDb):
         self.__column_quantity: str = SQL_SERVER_TRADES_TABLE_COLUMN_QUANTITY
         self.__column_order_id: str = SQL_SERVER_TRADES_TABLE_COLUMN_ORDER_ID
         self.__column_timestamp: str = SQL_SERVER_TRADES_TABLE_COLUMN_TIMESTAMP
-        self.__column_exchange: str = SQL_SERVER_TRADES_TABLE_COLUMN_EXCHANGE
+        self.__column_exchange: str = SQL_SERVER_TRADES_TABLE_COLUMN_ASSET_TYPE
 
     @property
     def column_order_id(self):
@@ -31,11 +32,12 @@ class SQLDbTrades(SQLDb):
     def column_order_type(self):
         return self.__column_order_type.strip('`')
 
-    def __create_dao(self, rows) -> SQLDbTradesDao:
+    @staticmethod
+    def __create_dao(rows) -> SQLDbTradesDao:
         """
         helper function to create a SQLDbTradesDao object
-        @param rows: a list of rows holding the data
-        @return: SQLDbTradesDao object
+        :param rows: a list of rows holding the data
+        :return: SQLDbTradesDao object
         """
         return SQLDbTradesDao(rows[0], rows[1], rows[2], rows[3], rows[4], rows[5])
 
@@ -110,30 +112,29 @@ class SQLDbTrades(SQLDb):
             trade_list.append(self.__create_dao(trade))
         return trade_list
 
-    def commit_trade(self, dao: SQLDbTradesDao) -> SQLQueryResponseType:
+    def commit_trade(self, order: Order) -> SQLQueryResponseType:
         """
         commits a trade dao into the db. \n
-        :param dao: trade object being sent to db
+        :param order: trade object being sent to db
         :return: whether the commit was successful or not
         """
         query = f"INSERT INTO `{super().table_name}` ({self.__column_name}, {self.__column_order_type}, " \
                 f"{self.__column_quantity}, {self.__column_order_id}, {self.__column_timestamp}, {self.__column_exchange}) " \
                 f"VALUES (%s, %s, %s, %s, %s, %s);"
-        params = (dao.name,
-                  dao.order_type.name.__str__(), dao.quantity.__str__(), dao.order_id.__str__(),
-                  dao.timestamp.__str__(),
-                  dao.exchange.name.__str__())
+        params = (order.asset.name.__str__(),
+                  order.type.name.__str__(), order.asset.qty.__str__(), order.asset.id.__str__(),
+                  order.asset.last_updated.__str__(), order.asset.type.name.__str__())
         return self.run_sql_query_no_response(query, params)
 
-    def delete_trade(self, dao: SQLDbTradesDao) -> SQLQueryResponseType:
+    def delete_trade(self, order: Order) -> SQLQueryResponseType:
         """
         deletes trade from db.  Should only be used for testing and helper functions.  There is no need to delete
         records... \n
-        :param dao: trade to be deleted
+        :param order: trade to be deleted
         :return: whether the deletion was successful
         """
         query = f"DELETE FROM {super().table_name} WHERE {self.column_order_id} = %s;"
-        params = [dao.order_id]
+        params = [order.asset.id.__str__()]
         return self.run_sql_query_no_response(query, params)
 
     def is_order_id_unique(self, order_id: int) -> bool:
@@ -145,6 +146,8 @@ class SQLDbTrades(SQLDb):
         query = f"SELECT * FROM `{super().table_name}` WHERE {self.__column_order_id} = {order_id}"
         rows, columns = self.run_sql_query(query)
         if rows is None and columns is not None:
+            return True
+        elif len(rows) == 0:
             return True
         else:
             return False

@@ -8,12 +8,14 @@ class OrderStatus(enum.Enum):
     """
     Status of the request depending on what is happening to it.
     """
-    INIT = 0
-    QUEUED = 1
-    PROCESSING = 2
-    FILLED = 3
-    FAILED = 4
-    CANCELLED = 5
+    INIT = "init"
+    QUEUED = "queued"
+    PROCESSING = "processing"
+    FILLED = "filled"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+    ACCEPTED = 'accepted'
+    REJECTED = 'rejected'
 
 
 class OrderType(enum.Enum):
@@ -91,4 +93,3 @@ class Order:
     @status.setter
     def status(self, new_status: OrderStatus):
         self.__status = new_status
-

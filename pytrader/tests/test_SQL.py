@@ -146,7 +146,7 @@ def test_sql_trades_get_trade():
     quantity: float = 1
     order_id: int = 1
     timestamp_str: str = "2022-04-28 03:44:03"
-    exchange: ExchangeName = ExchangeName.ALPACA_PAPER
+    asset_type: AssetType = AssetType.PAPER_STOCK
 
     sql_db: SQLDbTrades = SQLDbTrades()
     trade_dao: SQLDbTradesDao = sql_db.get_trade_by_order_id(order_id)
@@ -156,7 +156,7 @@ def test_sql_trades_get_trade():
     assert trade_dao.quantity == quantity
     assert trade_dao.order_id == order_id
     assert str(trade_dao.timestamp) == timestamp_str
-    assert trade_dao.exchange == exchange.value
+    assert trade_dao.asset_type == asset_type.value
 
 
 @timed
@@ -185,16 +185,20 @@ def test_sql_trades_commit_trade():
     Tests that we are able to add a trade to the sql database.  We then delete it for cleanliness purposes.
     """
     asset_name: str = "TEST"
-    order_type: RequestType = RequestType.BUY
+    order_type: OrderType = OrderType.BUY
     quantity: float = 1.23
     order_id: int = 0
     timestamp: datetime.datetime = datetime.datetime.now()
-    exchange: ExchangeName = ExchangeName.ALPACA_PAPER
+    asset_type: AssetType = AssetType.PAPER_STOCK
+    trade_intent: TradeIntent = TradeIntent.SHORT_TRADE
 
     # commit trade to db
     sql_db: SQLDbTrades = SQLDbTrades()
-    dao: SQLDbTradesDao = SQLDbTradesDao(asset_name, order_type, quantity, order_id, timestamp, exchange)
-    response: SQLQueryResponseType = sql_db.commit_trade(dao)
+    order: Order = Order(order_type, Asset(asset_name, asset_type))
+    order.asset.qty = quantity
+    order.asset.id = order_id
+    order.asset.trade_intent = trade_intent
+    response: SQLQueryResponseType = sql_db.commit_trade(order)
     assert response == SQLQueryResponseType.SUCCESSFUL
 
     # get created trade from db
@@ -202,7 +206,7 @@ def test_sql_trades_commit_trade():
     assert get_dao is not None
 
     # delete created trade from db
-    delete_successful = sql_db.delete_trade(dao)
+    delete_successful = sql_db.delete_trade(order)
     assert delete_successful == SQLQueryResponseType.SUCCESSFUL
 
     # make sure its gone
