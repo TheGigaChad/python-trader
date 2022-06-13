@@ -146,5 +146,7 @@ class SQLDbTrades(SQLDb):
         rows, columns = self.run_sql_query(query)
         if rows is None and columns is not None:
             return True
+        elif len(rows) == 0:
+            return True
         else:
             return False

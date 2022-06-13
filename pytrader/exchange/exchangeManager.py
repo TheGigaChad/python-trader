@@ -55,7 +55,6 @@ class ExchangeManager:
         """
         self.__order_queue.append(order)
 
-
     def __generate_new_trade_id(self, order: Order) -> Order:
         """
         Generates a unique id based on existing ids within the open and trades dbs. \n
@@ -68,16 +67,13 @@ class ExchangeManager:
                 order.asset.id = self.__sql_manager.open_trades_db.generate_new_asset_id(order)
         return order
 
-    def __fulfill(self, order: Order):
+    def __fulfill_order(self, order: Order):
         """
         Fulfills the order to the correct exchange.
         :param order: Order being requested.
         """
         # ensures the asset id is valid.
         order = self.__generate_new_trade_id(order)
-
-        if order.asset.id == 0:
-            order.asset.id = self.__sql_manager.open_trades_db.generate_new_asset_id(order)
         # fulfill to correct exchange
         if order.asset.type == AssetType.PAPER_STOCK:
             self.__paper_stock_exchange.fulfill(order)
@@ -88,7 +84,6 @@ class ExchangeManager:
         # update SQL tables
         response: SQLQueryResponseType = self.__sql_manager.open_trades_db.commit_trade(order)
         Log.i(f'Order to {order.type.name} {order.asset.qty} {order.asset.name} was {response.name}.')
-
 
     def __reorder(self, order: Order):
         """
@@ -151,22 +146,11 @@ class ExchangeManager:
                 # TODO - this should be reactive or something
                 for order in self.__order_queue:
                     if order.status == OrderStatus.QUEUED:
-
                         self.__fulfill_order(order)
                     elif order.status == OrderStatus.FILLED:
                         self.__order_queue.remove(order)
                     elif self.__order_failed_or_timed_out(order):
                         self.__reorder(order)
-
-                        self.__fulfill(order)
-                    # elif (datetime.datetime.now() - order.asset.last_updated) >= USER_TRADE_TIME_DELTA:
-                    #     # TODO - if a trade has timed out, we must restart it and update relevant locations.
-                    #     pass
-                # save queue state to db(?)
-
-                # commit trade
-
-                # respond to trade manager on what we did
 
     def is_running(self) -> bool:
         """
@@ -305,22 +289,6 @@ class ExchangeManager:
                 self.__dispatcher_receive_status_response(kwargs.get("manager_status"))
         else:
             Log.w(f"__dispatcher_receive : received a bad request ({request_type}) and/or  response ({response_type}).")
-
-    def request(self, asset: Asset, request_type: RequestType, request_params=None) -> ResponseStatus:
-        """
-        exchange request
-        """
-        #
-        Log.i(f"Request for {request_type.value} made for {asset.name}.")
-        if asset.type == AssetType.PAPER_STOCK:
-            response: ExchangeRequestResponse = self.__paper_stock_exchange.request(asset, request_type, request_params)
-            Log.i(f"Request for {request_type.value} made for {asset.name} is {response.type.value}.")
-            if response.listen_required:
-                # validation required that exchange received request (needed for buys/sells).
-                # TODO - Add listener for trade confirmations
-                return self.__listener.listen_for(response.data, self.__paper_stock_exchange)
-            else:
-                return response.type
 
     def update(self):
         """
