@@ -1,6 +1,7 @@
 import datetime
+
+from pytrader.common.asset import AssetType
 from pytrader.common.requests import RequestType
-from pytrader.exchange.exchange import ExchangeName
 
 
 class SQLDbTradesDao:
@@ -9,13 +10,13 @@ class SQLDbTradesDao:
     """
 
     def __init__(self, name: str, order_type: RequestType, quantity: float, order_id: int, timestamp: datetime.datetime,
-                 exchange: ExchangeName):
+                 asset_type: AssetType):
         self.__name: str = name
         self.__order_type: RequestType = order_type
         self.__quantity: float = quantity
         self.__order_id: int = order_id
         self.__timestamp: datetime.datetime = timestamp
-        self.__exchange: ExchangeName = exchange
+        self.__asset_type: AssetType = asset_type
 
     @property
     def name(self):
@@ -38,5 +39,5 @@ class SQLDbTradesDao:
         return self.__timestamp
 
     @property
-    def exchange(self):
-        return self.__exchange
+    def asset_type(self):
+        return self.__asset_type

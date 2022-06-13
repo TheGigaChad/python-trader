@@ -8,12 +8,12 @@ class AssetType(enum.Enum):
     """
      Enum used to identify the type of the asset. \n
      """
-    UNKNOWN = 0
-    STOCK = 1
-    CRYPTO = 2
-    FUND = 3
-    PAPER_STOCK = 4
-    PAPER_CRYPTO = 5
+    UNKNOWN = "UNKNOWN"
+    STOCK = "STOCK"
+    CRYPTO = "CRYPTO"
+    FUND = "FUND"
+    PAPER_STOCK = "PAPER_STOCK"
+    PAPER_CRYPTO = "PAPER_CRYPTO"
 
 
 class Asset:

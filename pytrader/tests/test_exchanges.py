@@ -1,8 +1,6 @@
 import alpaca_trade_api as tradeapi
 import pytest
 
-from pytrader.common.asset import Asset, AssetType
-from pytrader.common.requests import RequestType
 from pytrader.config import ALPACA_PAPER_KEY, ALPACA_PAPER_SECRET, ALPACA_PAPER_ADDRESS, ALPACA_PAPER_ACCOUNT_NUMBER
 from pytrader.exchange.exchangeManager import ExchangeManager
 

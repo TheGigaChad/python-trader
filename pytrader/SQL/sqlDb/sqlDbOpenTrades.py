@@ -9,7 +9,8 @@ from pytrader.common.order import Order, OrderType
 from pytrader.common.requests import RequestType
 from pytrader.config import SQL_SERVER_OPEN_TRADES_COLUMN_NAME, SQL_SERVER_OPEN_TRADES_COLUMN_ORDER_TYPE, \
     SQL_SERVER_OPEN_TRADES_COLUMN_QUANTITY, SQL_SERVER_OPEN_TRADES_COLUMN_TRADE_INTENT, \
-    SQL_SERVER_OPEN_TRADES_COLUMN_ORDER_ID, SQL_SERVER_OPEN_TRADES_COLUMN_LAST_UPDATED
+    SQL_SERVER_OPEN_TRADES_COLUMN_ORDER_ID, SQL_SERVER_OPEN_TRADES_COLUMN_LAST_UPDATED, \
+    SQL_SERVER_OPEN_TRADES_COLUMN_ASSET_TYPE
 
 
 class SQLDbOpenTrades(SQLDb):
@@ -20,6 +21,7 @@ class SQLDbOpenTrades(SQLDb):
     def __init__(self):
         super().__init__(SQLDbType.OPEN_TRADES)
         self.__column_name: str = SQL_SERVER_OPEN_TRADES_COLUMN_NAME
+        self.__column_asset_type: str = SQL_SERVER_OPEN_TRADES_COLUMN_ASSET_TYPE
         self.__column_order_type: str = SQL_SERVER_OPEN_TRADES_COLUMN_ORDER_TYPE
         self.__column_trade_intent: str = SQL_SERVER_OPEN_TRADES_COLUMN_TRADE_INTENT
         self.__column_quantity: str = SQL_SERVER_OPEN_TRADES_COLUMN_QUANTITY
@@ -41,7 +43,7 @@ class SQLDbOpenTrades(SQLDb):
         @param rows: a list of rows holding the data
         @return: SQLDbTradesDao object
         """
-        return SQLDbOpenTradesDao(rows[0], rows[1], rows[2], rows[3], rows[4], rows[5])
+        return SQLDbOpenTradesDao(rows[0], rows[1], rows[2], rows[3], rows[4], rows[5], rows[6])
 
     def get_trade_by_order_id(self, order_id: int) -> Optional[SQLDbOpenTradesDao]:
         """
@@ -120,11 +122,11 @@ class SQLDbOpenTrades(SQLDb):
         :param order: trade object being sent to db
         :return: whether the commit was successful or not
         """
-        query = f"INSERT INTO `{super().table_name}` ({self.__column_name}, {self.__column_order_type}, " \
-                f"{self.__column_trade_intent}, {self.__column_quantity}, {self.__column_order_id}, " \
-                f"{self.__column_timestamp}) VALUES (%s, %s, %s, %s, %s, %s);"
+        query = f"INSERT INTO `{super().table_name}` ({self.__column_name}, {self.__column_asset_type}, " \
+                f"{self.__column_trade_intent}, {self.__column_order_type}, {self.__column_quantity}, " \
+                f"{self.__column_order_id}, {self.__column_timestamp}) VALUES (%s, %s, %s, %s, %s, %s, %s);"
         params = (order.asset.name,
-                  order.asset.type.name.__str__(), order.asset.trade_intent.name.__str__(),
+                  order.asset.type.name.__str__(), order.asset.trade_intent.name.__str__(), order.type.name.__str__(),
                   order.asset.qty.__str__(), order.asset.id.__str__(), order.asset.last_updated.__str__())
         return self.run_sql_query_no_response(query, params)
 
@@ -151,7 +153,6 @@ class SQLDbOpenTrades(SQLDb):
         params = (order.asset.qty.__str__(), order.asset.last_updated.__str__(), order.asset.id.__str__())
 
         return self.run_sql_query_no_response(query, params)
-
 
     def is_order_id_unique(self, order_id: int) -> bool:
         """

@@ -7,7 +7,7 @@ from yarl import URL
 
 from pytrader.algo.algo_tradeIntent import TradeIntent
 from pytrader.common.asset import Asset
-from pytrader.common.order import Order
+from pytrader.common.order import Order, OrderStatus
 from pytrader.common.requests import RequestType, ResponseStatus
 from pytrader.common.status import Status
 
@@ -206,6 +206,22 @@ class Exchange(ABC):
         Determines the trade intent based on SQL data.
         @param asset:
         @return:
+        """
+
+    @abstractmethod
+    def update_order_status(self, order: Order) -> OrderStatus:
+        """
+        determines the order status based on the order id and the status within the exchange.
+        @param order: the order being inspected
+        @return: order status
+        """
+
+    @abstractmethod
+    def determine_value(self, asset: Asset) -> float:
+        """
+        returns the current value of the asset.
+        :param asset: asset being evaluated.
+        :return: value in relative currency.
         """
 
     def ignore_response(self) -> bool:

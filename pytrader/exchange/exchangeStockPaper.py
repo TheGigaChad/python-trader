@@ -1,5 +1,4 @@
 import json
-import random
 from typing import List, Optional
 
 import alpaca_trade_api
@@ -9,7 +8,7 @@ from pytrader.algo.algo_tradeIntent import TradeIntent
 from pytrader.cfg import config as cfg
 from pytrader.common.asset import Asset, AssetType
 from pytrader.common.log import Log
-from pytrader.common.order import Order, OrderType
+from pytrader.common.order import Order, OrderType, OrderStatus
 from pytrader.common.requests import ResponseStatus, RequestType
 from pytrader.exchange.exchange import Exchange, ExchangeName, ExchangeType, ExchangeRequestResponse
 
@@ -104,6 +103,29 @@ class ExchangeStockPaper(Exchange):
     def get_trade_intent(self, asset: Asset) -> TradeIntent:
         # TODO - work
         return TradeIntent.SHORT_TRADE
+
+    def update_order_status(self, order: Order) -> Order:
+        api = alpaca_trade_api.REST(self.get_key(), self.get_secret(), self.get_url())
+        list_orders = api.list_orders()
+        api.close()
+        for list_order in list_orders:
+            if list_order.client_order_id != order.asset.id.__str__():
+                continue
+            if list_order.status == OrderStatus.FILLED.value:
+                order.status = OrderStatus.FILLED
+            elif list_order.status == OrderStatus.ACCEPTED.value:
+                order.asset.qty = order.asset.qty - float(list_order.filled_qty)
+                order.status = OrderStatus.PROCESSING
+            elif list_order.status == OrderStatus.REJECTED.value:
+                order.status = OrderStatus.REJECTED
+
+        return order
+
+    def determine_value(self, asset: Asset) -> float:
+        api = alpaca_trade_api.REST(self.get_key(), self.get_secret(), self.get_url())
+        value: float = float(api.get_latest_bar(asset.name).c)
+        api.close()
+        return value
 
     def ignore_response(self) -> bool:
         is_market_open: bool = alpaca_trade_api.REST(cfg.ALPACA_PAPER_KEY, cfg.ALPACA_PAPER_SECRET,
