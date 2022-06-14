@@ -16,14 +16,6 @@ from pytrader.marketData.marketData import analyse
 logging.basicConfig(filename='algo.log', format='%(name)s - %(levelname)s - %(message)s')
 
 
-def return_trade_rating():
-    """
-    TODO \n
-    :return: 1 at the moment
-    """
-    return 1
-
-
 def getTickerName():
     """
     Determines name based on the parent instantiation. \n

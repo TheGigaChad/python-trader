@@ -7,8 +7,8 @@ from pytrader.riskParity.riskParityAsset import RiskParityAsset
 
 
 class RiskParityManager(TradingManager):
-    def __init__(self, exchange_manager: ExchangeManager):
-        super().__init__(exchange_manager)
+    def __init__(self):
+        super().__init__()
         self.__assets: [RiskParityAsset] = None
 
     @property
