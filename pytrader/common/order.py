@@ -1,7 +1,7 @@
 import enum
 from dataclasses import dataclass, field
 
-from pytrader.common.asset import Asset
+from pytrader import common
 
 
 class OrderStatus(enum.Enum):
@@ -39,7 +39,7 @@ class Order:
     """
 
     __type: OrderType
-    __asset: Asset
+    __asset: common.Asset
     __status: OrderStatus = field(init=False, default=OrderStatus.INIT)
 
     def __repr__(self):
@@ -53,7 +53,7 @@ class Order:
         return self.__type
 
     @property
-    def asset(self) -> Asset:
+    def asset(self) -> common.Asset:
         return self.__asset
 
     @property
