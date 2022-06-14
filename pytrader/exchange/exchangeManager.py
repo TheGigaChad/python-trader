@@ -24,7 +24,7 @@ Log = Log(__file__)
 
 class ExchangeManager:
     """
-    Handles the exchanges and different types of requests etc.  This should be interacted with by the different managers.
+    Handles the exchanges and different types of requests etc. This should be interacted with by the different managers.
     """
 
     def __init__(self, is_testing: Optional[bool] = False):
@@ -120,7 +120,7 @@ class ExchangeManager:
         self.__sql_manager.open_trades_db.update_trade(order)
 
     @staticmethod
-    def __order_failed_or_timed_out(order: Order) -> bool:
+    def __order_failed_or_timed_out_check(order: Order) -> bool:
         """
         returns whether the order has been unsuccessful or has timed out. \n
         :param order: the order to be checked.
@@ -158,12 +158,11 @@ class ExchangeManager:
                 time.sleep(1)
                 # TODO - this should be reactive or something
                 for order in self.__order_queue:
-                    print(order)
                     if order.status == OrderStatus.QUEUED:
                         self.__fulfill_order(order)
                     elif order.status == OrderStatus.FILLED:
                         self.__remove_order(order)
-                    elif self.__order_failed_or_timed_out(order):
+                    elif self.__order_failed_or_timed_out_check(order):
                         self.__reorder(order)
 
     def is_running(self) -> bool:
@@ -196,10 +195,11 @@ class ExchangeManager:
 
     def request_trading_manager_status(self):
         """
-        Requests the status of the Trading Manager.
+        Requests the status of the Trading Manager. \n
+        :return: none
         """
-        dispatcher.send(status=ResponseStatus.NONE, request_type=RequestType.STATUS, signal=self.__signal.value,
-                        sender=self.__sender.value)
+        dispatcher.send(status=ResponseStatus.NONE, request_type=RequestType.STATUS,
+                        signal=self.__signal.value, sender=self.__sender.value)
 
     def __is_new_order_unique(self, new_order: Order) -> bool:
         """
@@ -213,9 +213,30 @@ class ExchangeManager:
                     return False
         return True
 
-    def __update_order_status_from_exchange(self, order) -> Order:
+    def __get_assets_from_exchanges(self, asset_type: Optional[AssetType] = None) -> List[Asset]:
         """
-        updates the order status based on whether the exchange has filled the order, received it or not.
+        determines the assets held based on the asset type.  This will return all assets if you don't specify.
+        :param asset_type: type of asset you want specifically.
+        :return: all assets owned.
+        """
+        assets = None
+        if asset_type is None:
+            paper_stock = self.__paper_stock_exchange.holdings
+            assets = paper_stock
+        elif asset_type == AssetType.PAPER_STOCK:
+            paper_stock = self.__paper_stock_exchange.holdings
+            assets = paper_stock
+        elif asset_type == AssetType.PAPER_CRYPTO:
+            pass
+        elif asset_type == AssetType.STOCK:
+            pass
+        elif asset_type == AssetType.CRYPTO:
+            pass
+        return assets
+
+    def __update_order_status_from_exchange(self, order: Order) -> Order:
+        """
+        updates the order status based on whether the exchange has filled the order, received it or not. \n
         :param order: the order being evaluated.
         :return: updated order.
         """
@@ -233,7 +254,7 @@ class ExchangeManager:
             Log.w(f"Attempted to update the order status for {order} but cannot evaluate correct asset type.")
             return order
 
-    def __evaluate_order_value(self, order) -> float:
+    def __evaluate_order_value(self, order: Order) -> float:
         """
         evaluates the current value of the asset.
         :param order: order being evaluated
@@ -253,7 +274,8 @@ class ExchangeManager:
         :return: order.
         """
         order: Order = Order(OrderType(open_trade.order_type),
-                             Asset(name=open_trade.name, asset_type=AssetType(open_trade.asset_type)))
+                             Asset(name=open_trade.name,
+                                   asset_type=AssetType(open_trade.asset_type)))
         order.asset.id = open_trade.order_id
         order.asset.qty = open_trade.quantity
         order.asset.trade_intent = TradeIntent(open_trade.trade_intent)
@@ -263,7 +285,8 @@ class ExchangeManager:
 
     def __get_existing_open_trades(self):
         """
-        Finds all open trades within the exchanges and appends them to the queue if they are not filled yet. \n
+        Finds all open trades within the exchanges and appends them to the queue. \n
+        :return: none
         """
         if self.__testing:
             return
@@ -299,8 +322,9 @@ class ExchangeManager:
     def __dispatcher_receive_holdings_request(self):
         """
         Handles the receiving of a request for holdings from the Trading Manager.
+        :return: none
         """
-        holdings = self.get_assets()
+        holdings = self.__get_assets_from_exchanges()
         status = ResponseStatus.SUCCESSFUL if holdings is not None else ResponseStatus.UNSUCCESSFUL
         dispatcher.send(status=status, response_type=ResponseType.HOLDINGS, holdings=holdings,
                         signal=self.__signal.value,
@@ -316,7 +340,8 @@ class ExchangeManager:
             if order.asset.value >= 0.0:
                 order.asset.qty = self.__paper_stock_exchange.request_quantity(asset=order.asset)
                 if order.asset.qty >= 0.0:
-                    dispatcher.send(response_type=ResponseType.ALLOWANCE, status=ResponseStatus.SUCCESSFUL,
+                    dispatcher.send(response_type=ResponseType.ALLOWANCE,
+                                    status=ResponseStatus.SUCCESSFUL,
                                     order=order, signal=self.__signal.value, sender=self.__sender.value)
                     return
             Log.w(f"__dispatcher_receive_allowance_request : bad order value ({order.asset.value})"
@@ -358,30 +383,3 @@ class ExchangeManager:
                 self.__dispatcher_receive_status_response(kwargs.get("manager_status"))
         else:
             Log.w(f"__dispatcher_receive : received a bad request ({request_type}) and/or  response ({response_type}).")
-
-    def update(self):
-        """
-        Call to update data on all exchanges.
-        """
-        self.__paper_stock_exchange.request(RequestType.UPDATE)
-
-    def get_assets(self, asset_type: Optional[AssetType] = None) -> List[Asset]:
-        """
-        determines the assets held based on the asset type.  This will return all assets if you don't specify.
-        :param asset_type: type of asset you want specifically.
-        :return: all assets owned.
-        """
-        assets = None
-        if asset_type is None:
-            paper_stock = self.__paper_stock_exchange.holdings
-            assets = paper_stock
-        elif asset_type == AssetType.PAPER_STOCK:
-            paper_stock = self.__paper_stock_exchange.holdings
-            assets = paper_stock
-        elif asset_type == AssetType.PAPER_CRYPTO:
-            pass
-        elif asset_type == AssetType.STOCK:
-            pass
-        elif asset_type == AssetType.CRYPTO:
-            pass
-        return assets

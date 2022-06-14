@@ -86,7 +86,8 @@ class SQLDbOpenTrades(SQLDb):
         """
         gets all buy trades from the SQL server.
         """
-        query = f"SELECT * FROM `{super().table_name}` WHERE {self.__column_order_type} = '{RequestType.BUY.name}'"
+        query = f"SELECT * FROM `{super().table_name}` " \
+                f"WHERE {self.__column_order_type} = '{RequestType.BUY.name}' "
         rows, columns = self.run_sql_query(query)
         trade_list: list = []
         if rows is None or columns is None:
@@ -103,7 +104,8 @@ class SQLDbOpenTrades(SQLDb):
         """
         gets all sell trades from the SQL server.
         """
-        query = f"SELECT * FROM `{super().table_name}` WHERE {self.column_order_type} = '{RequestType.SELL.name}';"
+        query = f"SELECT * FROM `{super().table_name}` " \
+                f"WHERE {self.column_order_type} = '{RequestType.SELL.name}';"
         rows, columns = self.run_sql_query(query)
         trade_list: list = []
         if rows is None or columns is None:
