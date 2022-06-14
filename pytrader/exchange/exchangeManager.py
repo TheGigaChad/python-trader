@@ -4,10 +4,10 @@ from typing import Optional, List
 
 from pydispatch import dispatcher
 
-from pytrader.SQL.sqlDb.Daos.sqlDbOpenTradesDao import SQLDbOpenTradesDao
-from pytrader.SQL.sqlDb.sqlDb import SQLQueryResponseType
-from pytrader.SQL.sqlDbManager import SQLDbManager
-from pytrader.algo.algo_tradeIntent import TradeIntent
+from pytrader.sql.sqlDb.daos.sqlDbOpenTradesDao import SQLDbOpenTradesDao
+from pytrader.sql.sqlDb.sqlDb import SQLQueryResponseType
+from pytrader.sql.sqlManager import SQLManager
+from pytrader.common.tradeIntent import TradeIntent
 from pytrader.common.asset import Asset, AssetType
 from pytrader.common.dispatch import Sender, Signal
 from pytrader.common.log import Log
@@ -32,7 +32,7 @@ class ExchangeManager:
         self.__sender: Sender = Sender.EXCHANGE_MANAGER
         self.__signal: Signal = Signal.EXCHANGE_MANAGER
         self.__order_queue: List[Order] = []
-        self.__sql_manager: SQLDbManager = SQLDbManager()
+        self.__sql_manager: SQLManager = SQLManager()
         self.__paper_stock_exchange = ExchangeStockPaper()
         self.__testing: bool = is_testing
         self.__trading_manager_status: Status = Status.UNKNOWN
@@ -83,7 +83,7 @@ class ExchangeManager:
         order.status = OrderStatus.PROCESSING
         order.asset.last_updated = datetime.datetime.now()
 
-        # update SQL tables
+        # update sql tables
         response: SQLQueryResponseType = self.__sql_manager.open_trades_db.commit_trade(order)
         Log.i(f'Order to {order.type.name} {order.asset.qty} {order.asset.name} was {response.name}.')
 

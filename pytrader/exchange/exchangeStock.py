@@ -3,7 +3,7 @@ from typing import List, Optional
 
 from yarl import URL
 
-from pytrader.algo.algo_tradeIntent import TradeIntent
+from pytrader.common.tradeIntent import TradeIntent
 from pytrader.common.asset import Asset
 from pytrader.common.order import Order, OrderStatus
 from pytrader.common.requests import ResponseStatus, RequestType

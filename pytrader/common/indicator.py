@@ -13,21 +13,21 @@ class Indicator(str, enum.Enum):
     VOLUME = 'VOLUME'
     SMA = 'SMA'
 
-    def toString(self):
+    def to_string(self):
         return self.name
 
-    def toShortString(self) -> str:
-        if self.name == self.UNKNOWN.toString():
+    def to_short_string(self) -> str:
+        if self.name == self.UNKNOWN.to_string():
             return "UNKNOWN"
-        if self.name == self.RSI.toString():
+        if self.name == self.RSI.to_string():
             return "RSI"
-        if self.name == self.EMA.toString():
+        if self.name == self.EMA.to_string():
             return "EMA"
-        if self.name == self.BOLLINGER.toString():
+        if self.name == self.BOLLINGER.to_string():
             return "BOLB"
-        if self.name == self.MACD.toString():
+        if self.name == self.MACD.to_string():
             return "MACD"
-        if self.name == self.VOLUME.toString():
+        if self.name == self.VOLUME.to_string():
             return "VOL"
-        if self.name == self.SMA.toString():
+        if self.name == self.SMA.to_string():
             return "SMA"

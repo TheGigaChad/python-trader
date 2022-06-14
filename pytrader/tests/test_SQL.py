@@ -4,24 +4,19 @@ import json
 import mysql.connector as mysql
 
 from pytrader import cfg as cfg
-from pytrader.SQL.sqlDb.Daos.sqlDbOpenTradesDao import SQLDbOpenTradesDao
-from pytrader.SQL.sqlDb.sqlDb import SQLQueryResponseType
-from pytrader.SQL.sqlDb.sqlDbOpenTrades import SQLDbOpenTrades
-from pytrader.SQL.sqlDb.sqlDbTrades import SQLDbTrades, SQLDbTradesDao
-from pytrader.algo.algo_tradeIntent import TradeIntent
 from pytrader.common.asset import Asset, AssetType
 from pytrader.common.order import OrderType, Order
-from pytrader.common.requests import RequestType
+from pytrader.common.tradeIntent import TradeIntent
 from pytrader.common.wrappers import timed
-from pytrader.exchange.exchange import ExchangeName
 from pytrader.marketData.marketData_SQL import get_sql_window_data_as_json, update_window_data
+from pytrader.sql import sqlDb as sqlDb
 from pytrader.trade.tradingManager import determine_buy_sell_threshold_values
 
 
 @timed
 def test_sql_connection():
     """
-    Tests the connection to the SQL server.
+    Tests the connection to the sql server.
     """
     db_connection = mysql.connect(host=cfg.SQL_SERVER_HOST, database=cfg.SQL_SERVER_DATABASE, user=cfg.SQL_SERVER_USER,
                                   password=cfg.SQL_SERVER_PASSWORD)
@@ -92,7 +87,7 @@ def test_sql_window_data_to_json():
 
 @timed
 def test_sql_save_window_data():
-    json_file = "test_algo_windows.json"
+    json_file = "data/test_algo_windows.json"
 
     # empty the data
     open(json_file, 'w').close()
@@ -148,8 +143,8 @@ def test_sql_trades_get_trade():
     timestamp_str: str = "2022-04-28 03:44:03"
     asset_type: AssetType = AssetType.PAPER_STOCK
 
-    sql_db: SQLDbTrades = SQLDbTrades()
-    trade_dao: SQLDbTradesDao = sql_db.get_trade_by_order_id(order_id)
+    sql_db: sqlDb.SQLDbTrades = sqlDb.SQLDbTrades()
+    trade_dao: sqlDb.daos.SQLDbTradesDao = sql_db.get_trade_by_order_id(order_id)
 
     assert trade_dao.name == asset_name
     assert trade_dao.order_type == order_type.value
@@ -164,8 +159,8 @@ def test_sql_trades_get_all_buy_trades():
     """
     Tests that we can retrieve all buy trades from the database.
     """
-    sql_db: SQLDbTrades = SQLDbTrades()
-    trades_dao: [SQLDbTradesDao] = sql_db.get_all_buy_trades()
+    sql_db: sqlDb.SQLDbTrades = sqlDb.SQLDbTrades()
+    trades_dao: [sqlDb.daos.SQLDbTradesDao] = sql_db.get_all_buy_trades()
     assert len(trades_dao) == 1
 
 
@@ -174,8 +169,8 @@ def test_sql_trades_get_all_sell_trades():
     """
     Tests that we can retrieve all sell trades from the database.
     """
-    sql_db: SQLDbTrades = SQLDbTrades()
-    trades_dao: [SQLDbTradesDao] = sql_db.get_all_sell_trades()
+    sql_db: sqlDb.SQLDbTrades = sqlDb.SQLDbTrades()
+    trades_dao: [sqlDb.daos.SQLDbTradesDao] = sql_db.get_all_sell_trades()
     assert len(trades_dao) == 1
 
 
@@ -193,21 +188,21 @@ def test_sql_trades_commit_trade():
     trade_intent: TradeIntent = TradeIntent.SHORT_TRADE
 
     # commit trade to db
-    sql_db: SQLDbTrades = SQLDbTrades()
+    sql_db: sqlDb.SQLDbTrades = sqlDb.SQLDbTrades()
     order: Order = Order(order_type, Asset(asset_name, asset_type))
     order.asset.qty = quantity
     order.asset.id = order_id
     order.asset.trade_intent = trade_intent
-    response: SQLQueryResponseType = sql_db.commit_trade(order)
-    assert response == SQLQueryResponseType.SUCCESSFUL
+    response: sqlDb.SQLQueryResponseType = sql_db.commit_trade(order)
+    assert response == sqlDb.SQLQueryResponseType.SUCCESSFUL
 
     # get created trade from db
-    get_dao: SQLDbTradesDao = sql_db.get_trade_by_order_id(order_id)
+    get_dao: sqlDb.daos.SQLDbTradesDao = sql_db.get_trade_by_order_id(order_id)
     assert get_dao is not None
 
     # delete created trade from db
     delete_successful = sql_db.delete_trade(order)
-    assert delete_successful == SQLQueryResponseType.SUCCESSFUL
+    assert delete_successful == sqlDb.SQLQueryResponseType.SUCCESSFUL
 
     # make sure its gone
     get_dao = sql_db.get_trade_by_order_id(order_id)
@@ -222,21 +217,21 @@ def test_sql_open_trades_commit_trade():
     asset_name: str = "TEST"
     order_id: int = 0
     # commit trade to db
-    sql_db: SQLDbOpenTrades = SQLDbOpenTrades()
+    sql_db: sqlDb.SQLDbOpenTrades = sqlDb.SQLDbOpenTrades()
     order: Order = Order(OrderType.BUY, Asset(asset_name, AssetType.PAPER_STOCK))
     order.asset.qty = 1.23
     order.asset.id = order_id
     order.asset.trade_intent = TradeIntent.SHORT_TRADE
-    response: SQLQueryResponseType = sql_db.commit_trade(order)
-    assert response == SQLQueryResponseType.SUCCESSFUL
+    response: sqlDb.SQLQueryResponseType = sql_db.commit_trade(order)
+    assert response == sqlDb.SQLQueryResponseType.SUCCESSFUL
 
     # get created trade from db
-    get_dao: SQLDbOpenTradesDao = sql_db.get_trade_by_order_id(order_id)
+    get_dao: sqlDb.daos.SQLDbOpenTradesDao = sql_db.get_trade_by_order_id(order_id)
     assert get_dao is not None
 
     # delete created trade from db
     delete_successful = sql_db.delete_trade(order)
-    assert delete_successful == SQLQueryResponseType.SUCCESSFUL
+    assert delete_successful == sqlDb.SQLQueryResponseType.SUCCESSFUL
 
     # make sure its gone
     get_dao = sql_db.get_trade_by_order_id(order_id)
@@ -248,7 +243,7 @@ def test_sql_open_trades_unique_id():
     asset_name: str = "TEST"
     order_id: int = 0
     # commit trade to db
-    sql_db: SQLDbOpenTrades = SQLDbOpenTrades()
+    sql_db: sqlDb.SQLDbOpenTrades = sqlDb.SQLDbOpenTrades()
     order: Order = Order(OrderType.BUY, Asset(asset_name, AssetType.PAPER_STOCK))
     order.asset.qty = 1.23
     order.asset.id = order_id
@@ -262,7 +257,7 @@ def test_sql_open_trades_generate_unique_id():
     asset_name: str = "TEST"
     order_id: int = 0
     # commit trade to db
-    sql_db: SQLDbOpenTrades = SQLDbOpenTrades()
+    sql_db: sqlDb.SQLDbOpenTrades = sqlDb.SQLDbOpenTrades()
     order: Order = Order(OrderType.BUY, Asset(asset_name, AssetType.PAPER_STOCK))
     order.asset.qty = 1.23
     order.asset.id = order_id
@@ -270,29 +265,30 @@ def test_sql_open_trades_generate_unique_id():
     new_id: int = sql_db.generate_new_asset_id(order)
     assert new_id != 0
 
+
 @timed
 def test_sql_open_trades_update_order():
     asset_name: str = "TEST"
     order_id: int = 0
     # commit trade to db
-    sql_db: SQLDbOpenTrades = SQLDbOpenTrades()
+    sql_db: sqlDb.SQLDbOpenTrades = sqlDb.SQLDbOpenTrades()
     order: Order = Order(OrderType.BUY, Asset(asset_name, AssetType.PAPER_STOCK))
     order.asset.qty = 1.23
     order.asset.id = order_id
     order.asset.trade_intent = TradeIntent.SHORT_TRADE
-    response: SQLQueryResponseType = sql_db.commit_trade(order)
-    assert response == SQLQueryResponseType.SUCCESSFUL
+    response: sqlDb.SQLQueryResponseType = sql_db.commit_trade(order)
+    assert response == sqlDb.SQLQueryResponseType.SUCCESSFUL
 
     order.asset.last_updated = datetime.datetime.min
     response = sql_db.update_trade(order)
-    assert response == SQLQueryResponseType.SUCCESSFUL
+    assert response == sqlDb.SQLQueryResponseType.SUCCESSFUL
 
-    new_order: SQLDbOpenTradesDao = sql_db.get_trade_by_order_id(order.asset.id)
+    new_order: sqlDb.daos.SQLDbOpenTradesDao = sql_db.get_trade_by_order_id(order.asset.id)
     assert new_order.timestamp == datetime.datetime.min
 
     # delete created trade from db
     delete_successful = sql_db.delete_trade(order)
-    assert delete_successful == SQLQueryResponseType.SUCCESSFUL
+    assert delete_successful == sqlDb.SQLQueryResponseType.SUCCESSFUL
 
     # make sure its gone
     get_dao = sql_db.get_trade_by_order_id(order_id)

@@ -5,7 +5,7 @@ from typing import Optional, List
 
 from yarl import URL
 
-from pytrader.algo.algo_tradeIntent import TradeIntent
+from pytrader.common.tradeIntent import TradeIntent
 from pytrader.common.asset import Asset
 from pytrader.common.order import Order, OrderStatus
 from pytrader.common.requests import RequestType, ResponseStatus
@@ -203,7 +203,7 @@ class Exchange(ABC):
     @abstractmethod
     def get_trade_intent(self, asset: Asset) -> TradeIntent:
         """
-        Determines the trade intent based on SQL data.
+        Determines the trade intent based on sql data.
         @param asset:
         @return:
         """

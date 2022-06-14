@@ -8,7 +8,7 @@ from pytrader import cfg as cfg
 
 def sql_to_json(sql_response: list, column_names: list) -> json:
     """
-    Converts SQL responses to JSON format
+    Converts sql responses to JSON format
     :param sql_response: response data
     :param column_names: names of columns of table
     :return: Json string of data

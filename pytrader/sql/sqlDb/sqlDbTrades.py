@@ -1,8 +1,8 @@
 import datetime
 from typing import Optional
 
-from pytrader.SQL.sqlDb.Daos.sqlDbTradesDao import SQLDbTradesDao
-from pytrader.SQL.sqlDb.sqlDb import SQLDb, SQLDbType, SQLQueryResponseType
+from pytrader.sql.sqlDb.daos.sqlDbTradesDao import SQLDbTradesDao
+from pytrader.sql.sqlDb.sqlDb import SQLDb, SQLDbType, SQLQueryResponseType
 from pytrader.common.order import Order
 from pytrader.common.requests import RequestType
 from pytrader.config import SQL_SERVER_TRADES_TABLE_COLUMN_NAME, SQL_SERVER_TRADES_TABLE_COLUMN_ORDER_TYPE, \
@@ -43,7 +43,7 @@ class SQLDbTrades(SQLDb):
 
     def get_trade_by_order_id(self, order_id: int) -> Optional[SQLDbTradesDao]:
         """
-        gets a specific trade from the SQL server by the order id. \n
+        gets a specific trade from the sql server by the order id. \n
         :param order_id: the id of the trade.
         """
         query = f"SELECT * FROM `{super().table_name}` WHERE {self.__column_order_id} = {order_id}"
@@ -54,7 +54,7 @@ class SQLDbTrades(SQLDb):
 
     def get_trade_by_timestamp(self, timestamp: datetime.datetime) -> SQLDbTradesDao:
         """
-        gets a specific trade from the SQL server by the timestamp. if multiple exist, will return first instance. \n
+        gets a specific trade from the sql server by the timestamp. if multiple exist, will return first instance. \n
         :param timestamp: the datetime of the trade.
         """
         query = f"SELECT * FROM `{super().table_name}` WHERE {self.__column_timestamp} = {timestamp}"
@@ -63,7 +63,7 @@ class SQLDbTrades(SQLDb):
 
     def get_all_trades(self) -> [SQLDbTradesDao]:
         """
-        gets all trades from the SQL server.
+        gets all trades from the sql server.
         """
         query = f"SELECT * FROM `{super().table_name}` WHERE 1"
         rows, columns = self.run_sql_query(query)
@@ -80,7 +80,7 @@ class SQLDbTrades(SQLDb):
 
     def get_all_buy_trades(self) -> [SQLDbTradesDao]:
         """
-        gets all buy trades from the SQL server.
+        gets all buy trades from the sql server.
         """
         query = f"SELECT * FROM `{super().table_name}` WHERE {self.__column_order_type} = '{RequestType.BUY.name}'"
         rows, columns = self.run_sql_query(query)
@@ -97,7 +97,7 @@ class SQLDbTrades(SQLDb):
 
     def get_all_sell_trades(self) -> [SQLDbTradesDao]:
         """
-        gets all sell trades from the SQL server.
+        gets all sell trades from the sql server.
         """
         query = f"SELECT * FROM `{super().table_name}` WHERE {self.column_order_type} = '{RequestType.SELL.name}';"
         rows, columns = self.run_sql_query(query)

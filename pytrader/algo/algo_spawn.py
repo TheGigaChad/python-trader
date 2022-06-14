@@ -1,17 +1,17 @@
-import sys
-import logging
 import datetime
-from algo_main import api
-from pytrader.config import ALPACA_PAPER_KEY, ALPACA_PAPER_SECRET
-from algo_stock import Stock
-import time
-import random
-import websocket
 import json
+import logging
+import random
+import sys
+import time
+
+import websocket
+
+from algo_main import api
+from pytrader.common.indicator import Indicator
+from pytrader.common.tradeIntent import TradeIntent
+from pytrader.config import ALPACA_PAPER_KEY, ALPACA_PAPER_SECRET
 from pytrader.marketData.marketData import analyse
-from algo_indicators import Indicator
-from algo_tradeIntent import TradeIntent
-from algo_position import Position
 
 logging.basicConfig(filename='algo.log', format='%(name)s - %(levelname)s - %(message)s')
 
@@ -95,7 +95,7 @@ def buy(stock, allowance):
         print(api.get_order_by_client_order_id(order_id).status)
         t = purchaseSuccessful(order_id)
         if t:
-            stock.position = Position.TRADING
+            # stock.position = Position.TRADING
             print("successful")
         else:
             print("retrying buy attempt, cancelling original trade")
@@ -123,7 +123,7 @@ def sell(stock, q):
                          side='sell',
                          type='market',
                          client_order_id=order_id)
-        stock.position = Position.TRADING
+        stock.position = 2
         # listenForTradeUpdate(order_id)
         logging.warning(
             '{} : sold {} stock(s) of  {}'.format(datetime.datetime.now().strftime("%x %X"), q, stock.ticker_name))
@@ -169,7 +169,7 @@ def requestAllowance(stock, confidence):
                                                       stock))
 
 
-def getInitialPosition(ticker_name: str) -> Position:
+def getInitialPosition(ticker_name: str):
     """
     Determines whether we own the stock or whether we have an active trade and returns the position type \n
     :param ticker_name: name of stock
@@ -182,18 +182,18 @@ def getInitialPosition(ticker_name: str) -> Position:
     )
     open_order_list = [o for o in open_orders if o.symbol == ticker_name]
     if len(open_order_list) > 0:
-        return Position.TRADING
+        return 1
 
     positions = api.list_positions()
     for stock in positions:
         if stock.symbol == ticker_name:
-            return Position.OWNED
+            return 23
 
-    return Position.UNOWNED
+    return 3
 
 
 def getTradeIntent() -> TradeIntent:
-    # TODO - this needs to be in an SQL table
+    # TODO - this needs to be in an sql table
     """
     Determines the trade intent type \n
     :return: trade intent
@@ -284,7 +284,7 @@ def interpretMarket(stock_name: str, trade_intent: TradeIntent, indicator_list: 
     return confidence
 
 
-def run(stock: Stock):
+def run(stock):
     """
     main method for each subprocess based on  stock object. \n
     :param stock: Stock object
@@ -304,7 +304,7 @@ def run(stock: Stock):
                 # allowance = requestAllowance(stock.ticker_name, confidence * random.randrange(1, 1000) / 1000)
                 buy(stock, allowance)
 
-            elif confidence <= stock.sell_threshold and stock.position == Position.OWNED:
+            elif confidence <= stock.sell_threshold and stock.position == 1:
                 sell(stock, 1)
                 pass
             i = i + 1
@@ -336,10 +336,11 @@ def main():
     indicator_list = [Indicator.MACD, Indicator.RSI]
     trade_intent = getTradeIntent()
     position = getInitialPosition(ticker_name)
-    stock = Stock(ticker_name, indicator_list, trade_intent, position)
+    # stock = Stock(ticker_name, indicator_list, trade_intent, position)
     if not debug_mode:
-        run(stock)
-    quitting(stock.ticker_name)
+        pass
+        # run(stock)
+    # quitting(stock.ticker_name)
 
 
 # ----------

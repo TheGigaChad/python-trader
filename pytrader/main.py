@@ -1,7 +1,7 @@
 import threading
 
 import pytrader as cfg
-from pytrader.SQL.sqlDbManager import SQLDbManager
+from pytrader.sql.sqlManager import SQLManager
 from pytrader.exchange.exchangeManager import ExchangeManager
 from pytrader.models.modelManager import ModelManager
 from pytrader.riskParity.riskParityManager import RiskParityManager
@@ -9,8 +9,8 @@ from pytrader.trade.tradingManager import TradingManager
 
 
 def main():
-    # Update all SQL data
-    sql_manager = SQLDbManager()
+    # Update all sql data
+    sql_manager = SQLManager()
     sql_manager.update_local_stores()
 
     # Update all model data

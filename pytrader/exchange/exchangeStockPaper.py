@@ -4,7 +4,7 @@ from typing import List, Optional
 import alpaca_trade_api
 from yarl import URL
 
-from pytrader.algo.algo_tradeIntent import TradeIntent
+from pytrader.common.tradeIntent import TradeIntent
 from pytrader.cfg import config as cfg
 from pytrader.common.asset import Asset, AssetType
 from pytrader.common.log import Log

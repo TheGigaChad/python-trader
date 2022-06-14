@@ -1,11 +1,11 @@
 import enum
 import logging
 import sys
-from datetime import datetime
 import time
+from datetime import datetime
 
-from pytrader.algo.algo_indicators import Indicator
-from pytrader.algo.algo_tradeIntent import TradeIntent
+from pytrader.common.indicator import Indicator
+from pytrader.common.tradeIntent import TradeIntent
 from pytrader.marketData.marketData import analyse
 
 logging.basicConfig(filename='trade.log', format='%(name)s - %(levelname)s - %(message)s')
@@ -81,7 +81,7 @@ def run(instance: TradingInstance):
         elif confidence <= instance.confidence_sell_threshold and instance.intention == Intention.SELL:
             print("SELL NOW")
         i = i + 1
-        if i  > 0:
+        if i > 0:
             break
         time.sleep(1)
 

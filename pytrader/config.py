@@ -11,7 +11,7 @@ load_dotenv(dotenv_path)
 # ALPACA_PAPER_ADDRESS = os.environ.get("ALPACA_PAPER_ADDRESS")
 # ALPACA_PAPER_ACCOUNT_NUMBER = os.environ.get("ALPACA_PAPER_ACCOUNT_NUMBER")
 #
-# # SQL
+# # sql
 # SQL_SERVER_HOST = os.environ.get("SQL_SERVER_HOST")
 # SQL_SERVER_DATABASE = os.environ.get("SQL_SERVER_DATABASE")
 # SQL_SERVER_USER = os.environ.get("SQL_SERVER_USER")
@@ -29,7 +29,7 @@ ALPACA_PAPER_ACCOUNT_NUMBER = "PA3Y2VIN22VU"
 ALPACA_PAPER_WEBSOCKET = "wss://paper-api.alpaca.markets/stream"
 
 # --------
-# SQL Info
+# sql Info
 # --------
 SQL_SERVER_HOST = "156.67.72.201"
 SQL_SERVER_DATABASE = "u238726529_stock_trader"

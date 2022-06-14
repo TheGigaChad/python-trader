@@ -1,8 +1,8 @@
 import datetime
 
-from pytrader.algo.algo_tradeIntent import TradeIntent
 from pytrader.common.asset import AssetType
 from pytrader.common.order import OrderType
+from pytrader.common.tradeIntent import TradeIntent
 
 
 class SQLDbOpenTradesDao:

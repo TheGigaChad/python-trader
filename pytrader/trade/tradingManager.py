@@ -5,15 +5,15 @@ from typing import Optional, List, Tuple
 
 from pydispatch import dispatcher
 
-from pytrader.SQL.sqlDb.sqlDb import SQLDb, SQLDbType, SQLQueryResponseType
-from pytrader.algo.algo_tradeIntent import TradeIntent
 from pytrader.common.asset import Asset, AssetType
 from pytrader.common.dispatch import Sender, Signal
 from pytrader.common.log import Log
 from pytrader.common.order import Order, OrderType, OrderStatus
 from pytrader.common.requests import ResponseStatus, RequestType, ResponseType
 from pytrader.common.status import Status
+from pytrader.common.tradeIntent import TradeIntent
 from pytrader.config import DEV_TEST_MODE
+from pytrader.sql.sqlDb.sqlDb import SQLDb, SQLDbType, SQLQueryResponseType
 
 Log = Log(__file__)
 

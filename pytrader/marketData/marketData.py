@@ -11,19 +11,19 @@ from pytz import timezone
 from ta.momentum import RSIIndicator
 from ta.volume import on_balance_volume
 
-from pytrader.algo.algo_indicators import Indicator
 from pytrader.algo.algo_main import api
+from pytrader.common.indicator import Indicator
 from pytrader.common.tradeIntent import TradeIntent
 
 tz = timezone('EST')
 
-# TODO-ML: We need to be able to determine these scalars
+# TODO-ml: We need to be able to determine these scalars
 RSI_GRADIENT_SCALAR = 1
 RSI_INSTANTANEOUS_SCALAR = 1
 
 
 def get_window(indicator: Indicator, trade_intent: TradeIntent, ticker: str,
-               file: Optional[str] = Path(__file__).parent.parent / "SQL/data/windows.json"):
+               file: Optional[str] = Path(__file__).parent.parent / "sql/sqlDb/data/test_algo_windows.json"):
     """
     gets the window for analysis. \n
     :param indicator: (Indicator) type of indicator used for analysis.
@@ -41,12 +41,12 @@ def get_window(indicator: Indicator, trade_intent: TradeIntent, ticker: str,
         if item["NAME"] == ticker:
             if indicator == Indicator.MACD:
                 macd_indicators = ["FAST", "SLOW", "SIG"]
-                macd_fast = indicator.toShortString() + "_" + macd_indicators[0] + "_" + trade_intent.value
-                macd_slow = indicator.toShortString() + "_" + macd_indicators[1] + "_" + trade_intent.value
-                macd_sig = indicator.toShortString() + "_" + macd_indicators[2] + "_" + trade_intent.value
+                macd_fast = indicator.to_short_string() + "_" + macd_indicators[0] + "_" + trade_intent.value
+                macd_slow = indicator.to_short_string() + "_" + macd_indicators[1] + "_" + trade_intent.value
+                macd_sig = indicator.to_short_string() + "_" + macd_indicators[2] + "_" + trade_intent.value
                 return item[macd_fast], item[macd_slow], item[macd_sig]
             else:
-                sql_column_name = indicator.toShortString() + "_" + trade_intent.value
+                sql_column_name = indicator.to_short_string() + "_" + trade_intent.value
                 return item[sql_column_name]
 
     print(f"getWindow could not determine the Trade Intent {trade_intent} for the indicator {indicator}")
@@ -280,7 +280,7 @@ def analyse_SMA(trade_intent: TradeIntent, data: pandas.DataFrame, ticker: str) 
 
 def analyse(stock_name: str, trade_intent: TradeIntent, indicator: Indicator) -> float:
     """
-    TODO - feed output into ML algorithm. \n
+    TODO - feed output into ml algorithm. \n
     ------\n
     Simple framework that connects to the corresponding indicator analysis
     :param stock_name: name of asset.

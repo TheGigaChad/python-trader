@@ -3,15 +3,15 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from pytrader.algo.algo_indicators import Indicator
-from pytrader.algo.algo_tradeIntent import TradeIntent
+from pytrader.common.indicator import Indicator
+from pytrader.common.tradeIntent import TradeIntent
 from pytrader.marketData import marketData
 
 THIS_DIR = Path(__file__).parent
-MY_DATA_PATH = THIS_DIR / 'TSLA_historical_data.csv'
+MY_DATA_PATH = THIS_DIR / 'data/TSLA_historical_data.csv'
 STOCK_DATA = pd.read_csv(MY_DATA_PATH)
 STOCK_NAME = "TSLA"
-STOCK_JSON = 'test_algo_windows.json'
+STOCK_JSON = 'data/test_algo_windows.json'
 
 
 def test_rsi():

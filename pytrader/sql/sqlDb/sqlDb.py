@@ -11,7 +11,7 @@ import pytrader.cfg as cfg
 
 def sql_response_to_json(sql_response: list, column_names: list) -> json:
     """
-    Converts SQL responses to JSON format
+    Converts sql responses to JSON format
     :param sql_response: response data
     :param column_names: names of columns of table
     :return: Json string of data
@@ -105,7 +105,7 @@ class SQLDb:
     def __get_local_dir(self) -> Path:
         local_dir = Path(__file__).parent
         if self.__db_type == SQLDbType.WINDOW:
-            return local_dir / 'data/windows.json'
+            return local_dir / 'data/test_windows.json'
         elif self.__db_type == SQLDbType.BUY_SELL_THRESHOLDS:
             return local_dir / 'data/buy_sell_thresholds.json'
         elif self.__db_type == SQLDbType.TRADES:

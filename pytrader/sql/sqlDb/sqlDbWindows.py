@@ -1,4 +1,4 @@
-from pytrader.SQL.sqlDb.sqlDb import SQLDb, SQLDbType
+from pytrader.sql.sqlDb.sqlDb import SQLDb, SQLDbType
 
 
 class SQLDbWindows(SQLDb):
