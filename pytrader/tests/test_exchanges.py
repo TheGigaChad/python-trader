@@ -1,34 +1,33 @@
-import alpaca_trade_api as tradeapi
+import alpaca_trade_api as trade_api
 import pytest
 
-from pytrader.config import ALPACA_PAPER_KEY, ALPACA_PAPER_SECRET, ALPACA_PAPER_ADDRESS, ALPACA_PAPER_ACCOUNT_NUMBER
-from pytrader.exchange.exchangeManager import ExchangeManager
+from pytrader import config, exchange
 
 
 # ALPACA TESTS
 def test_alpaca_paper_account():
-    api = tradeapi.REST(ALPACA_PAPER_KEY, ALPACA_PAPER_SECRET, ALPACA_PAPER_ADDRESS)
-    assert api.get_account().account_number == ALPACA_PAPER_ACCOUNT_NUMBER
+    api = trade_api.REST(config.ALPACA_PAPER_KEY, config.ALPACA_PAPER_SECRET, config.ALPACA_PAPER_ADDRESS)
+    assert api.get_account().account_number == config.ALPACA_PAPER_ACCOUNT_NUMBER
 
 
 def test_alpaca_paper_account_blocked():
-    api = tradeapi.REST(ALPACA_PAPER_KEY, ALPACA_PAPER_SECRET, ALPACA_PAPER_ADDRESS)
+    api = trade_api.REST(config.ALPACA_PAPER_KEY, config.ALPACA_PAPER_SECRET, config.ALPACA_PAPER_ADDRESS)
     assert not api.get_account().account_blocked
 
 
 def test_alpaca_paper_trading_blocked():
-    api = tradeapi.REST(ALPACA_PAPER_KEY, ALPACA_PAPER_SECRET, ALPACA_PAPER_ADDRESS)
+    api = trade_api.REST(config.ALPACA_PAPER_KEY, config.ALPACA_PAPER_SECRET, config.ALPACA_PAPER_ADDRESS)
     assert not api.get_account().trading_blocked
 
 
 def test_alpaca_paper_transfers_blocked():
-    api = tradeapi.REST(ALPACA_PAPER_KEY, ALPACA_PAPER_SECRET, ALPACA_PAPER_ADDRESS)
+    api = trade_api.REST(config.ALPACA_PAPER_KEY, config.ALPACA_PAPER_SECRET, config.ALPACA_PAPER_ADDRESS)
     assert not api.get_account().transfers_blocked
 
 
 def test_exchange_paper_stock_account():
-    exchange = ExchangeManager(is_testing=True)
-    cash = exchange.paper_stock_exchange.cash
+    e: exchange.ExchangeManager = exchange.ExchangeManager(is_testing=True)
+    cash = e.paper_stock_exchange.cash
     assert cash is not None and type(cash) == float
 
 
