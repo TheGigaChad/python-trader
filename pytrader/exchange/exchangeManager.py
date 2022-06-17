@@ -4,10 +4,7 @@ from typing import Optional, List
 
 from pydispatch import dispatcher
 
-from pytrader import common
-from pytrader import exchange
-from pytrader import sql
-from pytrader.config import USER_OPEN_TRADE_TIME_DELTA
+from pytrader import common, exchange, sql, config
 from pytrader.sql import sqlDb
 
 Log = common.Log(__file__)
@@ -117,7 +114,7 @@ class ExchangeManager:
         :param order: the order to be checked.
         :return: the success of the transaction on the exchange.
         """
-        if (datetime.datetime.now() - order.asset.last_updated).seconds >= USER_OPEN_TRADE_TIME_DELTA \
+        if (datetime.datetime.now() - order.asset.last_updated).seconds >= config.USER_OPEN_TRADE_TIME_DELTA \
                 and order.status == common.OrderStatus.PROCESSING:
             return True
         elif order.status == common.OrderStatus.CANCELLED:
@@ -347,6 +344,16 @@ class ExchangeManager:
         dispatcher.send(status=common.ResponseStatus.SUCCESSFUL, response_type=common.ResponseType.STATUS,
                         manager_status=self.__status, signal=self.__signal.value, sender=self.__sender.value)
 
+    def __dispatcher_receive_thresholds_request(self, asset: common.Asset):
+        """
+        Handles the buy and sell threshold requests from the Trading Manager.
+        :return:
+        """
+        buy_threshold, sell_threshold = self.__sql_manager.buy_sell_threshold_db.get_threshold(asset)
+        dispatcher.send(status=common.ResponseStatus.SUCCESSFUL, response_type=common.ResponseType.BUY_SELL_THRESHOLDS,
+                        buy_threshold=buy_threshold, sell_threshold=sell_threshold, asset=asset,
+                        signal=self.__signal.value, sender=self.__sender.value)
+
     def __dispatcher_receive_status_response(self, status: common.Status):
         """
         Handles the status response from the Trading Manager.
@@ -369,6 +376,8 @@ class ExchangeManager:
                 self.__dispatcher_receive_allowance_request(kwargs.get("order"))
             elif request_type == common.RequestType.STATUS:
                 self.__dispatcher_receive_status_request()
+            elif request_type == common.RequestType.BUY_SELL_THRESHOLDS:
+                self.__dispatcher_receive_thresholds_request(kwargs.get("asset"))
         elif response_type is not None:
             if response_type == common.ResponseType.STATUS:
                 self.__dispatcher_receive_status_response(kwargs.get("manager_status"))

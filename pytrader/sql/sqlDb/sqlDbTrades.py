@@ -3,7 +3,7 @@ from typing import Optional
 
 from pytrader.sql.sqlDb.daos.sqlDbTradesDao import SQLDbTradesDao
 from pytrader.sql.sqlDb.sqlDb import SQLDb, SQLDbType, SQLQueryResponseType
-from pytrader.common.order import Order
+from pytrader.common.order import Order, OrderType
 from pytrader.common.requests import RequestType
 from pytrader.config import SQL_SERVER_TRADES_TABLE_COLUMN_NAME, SQL_SERVER_TRADES_TABLE_COLUMN_ORDER_TYPE, \
     SQL_SERVER_TRADES_TABLE_COLUMN_ORDER_ID, SQL_SERVER_TRADES_TABLE_COLUMN_ASSET_TYPE, \
@@ -82,7 +82,7 @@ class SQLDbTrades(SQLDb):
         """
         gets all buy trades from the sql server.
         """
-        query = f"SELECT * FROM `{super().table_name}` WHERE {self.__column_order_type} = '{RequestType.BUY.name}'"
+        query = f"SELECT * FROM `{super().table_name}` WHERE {self.__column_order_type} = '{OrderType.BUY.name}'"
         rows, columns = self.run_sql_query(query)
         trade_list: list = []
         if rows is None or columns is None:
@@ -99,7 +99,7 @@ class SQLDbTrades(SQLDb):
         """
         gets all sell trades from the sql server.
         """
-        query = f"SELECT * FROM `{super().table_name}` WHERE {self.column_order_type} = '{RequestType.SELL.name}';"
+        query = f"SELECT * FROM `{super().table_name}` WHERE {self.column_order_type} = '{OrderType.SELL.name}';"
         rows, columns = self.run_sql_query(query)
         trade_list: list = []
         if rows is None or columns is None:

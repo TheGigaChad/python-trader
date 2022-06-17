@@ -5,29 +5,29 @@ class Indicator(str, enum.Enum):
     """
     Enum that distinguishes the type of indicator (RSI, EMA...).
     """
-    UNKNOWN = 'UNKNOWN'
-    RSI = 'RSI'
-    EMA = 'EMA'
-    BOLLINGER = 'BOLLINGER'
-    MACD = 'MACD'
-    VOLUME = 'VOLUME'
-    SMA = 'SMA'
+    UNKNOWN = 'unknown'
+    RSI = 'rsi'
+    EMA = 'ema'
+    BOLLINGER = 'bollinger'
+    MACD = 'macd'
+    VOLUME = 'volume'
+    SMA = 'sma'
 
     def to_string(self):
         return self.name
 
     def to_short_string(self) -> str:
         if self.name == self.UNKNOWN.to_string():
-            return "UNKNOWN"
+            return "unknown"
         if self.name == self.RSI.to_string():
-            return "RSI"
+            return "rsi"
         if self.name == self.EMA.to_string():
-            return "EMA"
+            return "ema"
         if self.name == self.BOLLINGER.to_string():
-            return "BOLB"
+            return "bolb"
         if self.name == self.MACD.to_string():
-            return "MACD"
+            return "macd"
         if self.name == self.VOLUME.to_string():
-            return "VOL"
+            return "vol"
         if self.name == self.SMA.to_string():
-            return "SMA"
+            return "sma"

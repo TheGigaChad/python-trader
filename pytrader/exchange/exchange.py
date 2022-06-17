@@ -226,20 +226,6 @@ class Exchange(ABC):
         """
         pass
 
-    def request(self, order: common.Order, request_type: common.RequestType, request_params=None):
-        if request_type == common.RequestType.INFO:
-            print(f"info requested for {order.asset.name} from the exchange {self.__name.value}")
-        elif request_type == common.RequestType.UPDATE:
-            # TODO - exchange logic
-            return ExchangeRequestResponse(response_type=common.ResponseStatus.SUCCESSFUL)
-        elif request_type == common.RequestType.INFO:
-            return ExchangeRequestResponse(response_type=common.ResponseStatus.SUCCESSFUL,
-                                           request_params=request_params)
-        elif request_type == common.RequestType.BUY:
-            return self.__buy(order)
-        elif request_type == common.RequestType.SELL:
-            return self.__sell(order)
-
     def asset_to_json(self, request_type: Optional[common.RequestType] = common.RequestType.UNDEFINED) -> json:
         # TODO - this needs a lot of work
         """

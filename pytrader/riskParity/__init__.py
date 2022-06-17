@@ -1,0 +1,1 @@
+from pytrader.riskParity.riskParityManager import RiskParityManager

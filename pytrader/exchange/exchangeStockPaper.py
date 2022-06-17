@@ -4,8 +4,7 @@ from typing import List, Optional
 import alpaca_trade_api
 from yarl import URL
 
-from pytrader import common
-from pytrader import exchange
+from pytrader import common, exchange
 from pytrader.cfg import config as cfg
 
 Log = common.Log(__file__)
@@ -125,9 +124,6 @@ class ExchangeStockPaper(exchange.Exchange):
 
     def get_stale_requests(self):
         pass
-
-    def request(self, order: common.Order, request_type: common.RequestType, request_params=None):
-        super().request(order, request_type, request_params)
 
     def asset_to_json(self, request_type: Optional[common.RequestType] = common.RequestType.UNDEFINED) -> json:
         super().asset_to_json(request_type)

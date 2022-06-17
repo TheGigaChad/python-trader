@@ -2,13 +2,8 @@ import datetime
 import random
 from typing import Optional
 
-import pytrader.sql.sqlDb as sqlDb
-from pytrader.common.order import Order, OrderType
-from pytrader.common.requests import RequestType
-from pytrader.config import SQL_SERVER_OPEN_TRADES_COLUMN_NAME, SQL_SERVER_OPEN_TRADES_COLUMN_ORDER_TYPE, \
-    SQL_SERVER_OPEN_TRADES_COLUMN_QUANTITY, SQL_SERVER_OPEN_TRADES_COLUMN_TRADE_INTENT, \
-    SQL_SERVER_OPEN_TRADES_COLUMN_ORDER_ID, SQL_SERVER_OPEN_TRADES_COLUMN_LAST_UPDATED, \
-    SQL_SERVER_OPEN_TRADES_COLUMN_ASSET_TYPE
+from pytrader import common, config
+from pytrader.sql import sqlDb
 
 
 class SQLDbOpenTrades(sqlDb.SQLDb):
@@ -18,13 +13,13 @@ class SQLDbOpenTrades(sqlDb.SQLDb):
 
     def __init__(self):
         super().__init__(sqlDb.SQLDbType.OPEN_TRADES)
-        self.__column_name: str = SQL_SERVER_OPEN_TRADES_COLUMN_NAME
-        self.__column_asset_type: str = SQL_SERVER_OPEN_TRADES_COLUMN_ASSET_TYPE
-        self.__column_order_type: str = SQL_SERVER_OPEN_TRADES_COLUMN_ORDER_TYPE
-        self.__column_trade_intent: str = SQL_SERVER_OPEN_TRADES_COLUMN_TRADE_INTENT
-        self.__column_quantity: str = SQL_SERVER_OPEN_TRADES_COLUMN_QUANTITY
-        self.__column_order_id: str = SQL_SERVER_OPEN_TRADES_COLUMN_ORDER_ID
-        self.__column_timestamp: str = SQL_SERVER_OPEN_TRADES_COLUMN_LAST_UPDATED
+        self.__column_name: str = config.SQL_SERVER_OPEN_TRADES_COLUMN_NAME
+        self.__column_asset_type: str = config.SQL_SERVER_OPEN_TRADES_COLUMN_ASSET_TYPE
+        self.__column_order_type: str = config.SQL_SERVER_OPEN_TRADES_COLUMN_ORDER_TYPE
+        self.__column_trade_intent: str = config.SQL_SERVER_OPEN_TRADES_COLUMN_TRADE_INTENT
+        self.__column_quantity: str = config.SQL_SERVER_OPEN_TRADES_COLUMN_QUANTITY
+        self.__column_order_id: str = config.SQL_SERVER_OPEN_TRADES_COLUMN_ORDER_ID
+        self.__column_timestamp: str = config.SQL_SERVER_OPEN_TRADES_COLUMN_LAST_UPDATED
 
     @property
     def column_order_id(self):
@@ -85,7 +80,7 @@ class SQLDbOpenTrades(sqlDb.SQLDb):
         gets all buy trades from the sql server.
         """
         query = f"SELECT * FROM `{super().table_name}` " \
-                f"WHERE {self.__column_order_type} = '{RequestType.BUY.name}' "
+                f"WHERE {self.__column_order_type} = '{common.OrderType.BUY.name}' "
         rows, columns = self.run_sql_query(query)
         trade_list: list = []
         if rows is None or columns is None:
@@ -103,7 +98,7 @@ class SQLDbOpenTrades(sqlDb.SQLDb):
         gets all sell trades from the sql server.
         """
         query = f"SELECT * FROM `{super().table_name}` " \
-                f"WHERE {self.column_order_type} = '{RequestType.SELL.name}';"
+                f"WHERE {self.column_order_type} = '{common.OrderType.SELL.name}';"
         rows, columns = self.run_sql_query(query)
         trade_list: list = []
         if rows is None or columns is None:
@@ -116,7 +111,7 @@ class SQLDbOpenTrades(sqlDb.SQLDb):
             trade_list.append(self.__create_dao(trade))
         return trade_list
 
-    def commit_trade(self, order: Order) -> sqlDb.SQLQueryResponseType:
+    def commit_trade(self, order: common.Order) -> sqlDb.SQLQueryResponseType:
         """
         commits a trade dao into the db. \n
         :param order: trade object being sent to db
@@ -130,7 +125,7 @@ class SQLDbOpenTrades(sqlDb.SQLDb):
                   order.asset.qty.__str__(), order.asset.id.__str__(), order.asset.last_updated.__str__())
         return self.run_sql_query_no_response(query, params)
 
-    def delete_trade(self, order: Order) -> sqlDb.SQLQueryResponseType:
+    def delete_trade(self, order: common.Order) -> sqlDb.SQLQueryResponseType:
         """
         deletes trade from db.  Should only be used for testing and helper functions.  There is no need to delete
         records... \n
@@ -141,7 +136,7 @@ class SQLDbOpenTrades(sqlDb.SQLDb):
         params = [order.asset.id]
         return self.run_sql_query_no_response(query, params)
 
-    def update_trade(self, order: Order) -> sqlDb.SQLQueryResponseType:
+    def update_trade(self, order: common.Order) -> sqlDb.SQLQueryResponseType:
         """
         updates order within db with provided order data.
         :param order: order to update
@@ -169,13 +164,13 @@ class SQLDbOpenTrades(sqlDb.SQLDb):
         else:
             return False
 
-    def generate_new_asset_id(self, order: Order) -> int:
+    def generate_new_asset_id(self, order: common.Order) -> int:
         """
         Generates a new unique ID for use within the table. \n
         :param order: the order, used to generate a prefix based on trade type.
         :return: id.
         """
-        pref: str = "1" if order.type == OrderType.BUY else "2"
+        pref: str = "1" if order.type == common.OrderType.BUY else "2"
         new_id: int = int(pref + str(random.randrange(100000)))
         if self.is_order_id_unique(new_id):
             return new_id

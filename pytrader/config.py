@@ -1,5 +1,5 @@
-import os
 from os.path import join, dirname
+
 from dotenv import load_dotenv
 
 dotenv_path = join(dirname(__file__), '../.env')
@@ -35,11 +35,8 @@ SQL_SERVER_HOST = "156.67.72.201"
 SQL_SERVER_DATABASE = "u238726529_stock_trader"
 SQL_SERVER_USER = "u238726529_mike"
 SQL_SERVER_PASSWORD = "MassiveLegend69"
-SQL_SERVER_WINDOWS_TABLE = "algo_trade_intent_windows"
 
-SQL_SERVER_BUY_SELL_THRESHOLDS_TABLE = "algo_trade_buy_sell_thresholds"
-
-SQL_SERVER_TRADES_TABLE = "algo_trade_trades"
+SQL_SERVER_TRADES_TABLE: str = "algo_trade_trades"
 SQL_SERVER_TRADES_TABLE_COLUMN_NAME: str = "`name`"
 SQL_SERVER_TRADES_TABLE_COLUMN_ORDER_TYPE: str = "`order_type`"
 SQL_SERVER_TRADES_TABLE_COLUMN_QUANTITY: str = "`quantity`"
@@ -47,7 +44,7 @@ SQL_SERVER_TRADES_TABLE_COLUMN_ORDER_ID: str = "`order_id`"
 SQL_SERVER_TRADES_TABLE_COLUMN_TIMESTAMP: str = "`timestamp`"
 SQL_SERVER_TRADES_TABLE_COLUMN_ASSET_TYPE: str = "`asset_type`"
 
-SQL_SERVER_OPEN_TRADES_TABLE = "algo_trade_open_trades"
+SQL_SERVER_OPEN_TRADES_TABLE: str = "algo_trade_open_trades"
 SQL_SERVER_OPEN_TRADES_COLUMN_NAME: str = "`name`"
 SQL_SERVER_OPEN_TRADES_COLUMN_ASSET_TYPE: str = "`asset_type`"
 SQL_SERVER_OPEN_TRADES_COLUMN_ORDER_TYPE: str = "`order_type`"
@@ -56,6 +53,38 @@ SQL_SERVER_OPEN_TRADES_COLUMN_QUANTITY: str = "`quantity`"
 SQL_SERVER_OPEN_TRADES_COLUMN_ORDER_ID: str = "`trade_id`"
 SQL_SERVER_OPEN_TRADES_COLUMN_LAST_UPDATED: str = "`last_updated`"
 
+SQL_SERVER_BUY_SELL_THRESHOLDS_TABLE: str = "`algo_trade_buy_sell_thresholds`"
+SQL_SERVER_BUY_SELL_THRESHOLDS_COLUMN_NAME: str = "`name`"
+SQL_SERVER_BUY_SELL_THRESHOLDS_COLUMN_BUY: str = "`buy`"
+SQL_SERVER_BUY_SELL_THRESHOLDS_COLUMN_SELL: str = "`sell`"
+SQL_SERVER_BUY_SELL_THRESHOLDS_COLUMN_LAST_UPDATED: str = "`last_updated`"
+
+SQL_SERVER_WINDOWS_TABLE = "algo_trade_intent_windows"
+SQL_SERVER_WINDOWS_COLUMN_NAME = "`name`"
+SQL_SERVER_WINDOWS_COLUMN_SMA_SHORT_TRADE = "`sma_short_trade`"
+SQL_SERVER_WINDOWS_COLUMN_SMA_LONG_TRADE = "`sma_long_trade`"
+SQL_SERVER_WINDOWS_COLUMN_SMA_LONG_HOLD = "`sma_long_hold`"
+SQL_SERVER_WINDOWS_COLUMN_EMA_SHORT_TRADE = "`ema_short_trade`"
+SQL_SERVER_WINDOWS_COLUMN_EMA_LONG_TRADE = "`ema_long_trade`"
+SQL_SERVER_WINDOWS_COLUMN_EMA_LONG_HOLD = "`ema_long_hold`"
+SQL_SERVER_WINDOWS_COLUMN_MACD_FAST_SHORT_TRADE = "`macd_fast_short_trade`"
+SQL_SERVER_WINDOWS_COLUMN_MACD_SLOW_SHORT_TRADE = "`macd_slow_short_trade`"
+SQL_SERVER_WINDOWS_COLUMN_MACD_SIG_SHORT_TRADE = "`macd_sig_short_trade`"
+SQL_SERVER_WINDOWS_COLUMN_MACD_FAST_LONG_TRADE = "`macd_fast_long_trade`"
+SQL_SERVER_WINDOWS_COLUMN_MACD_SLOW_LONG_TRADE = "`macd_slow_long_trade`"
+SQL_SERVER_WINDOWS_COLUMN_MACD_SIG_LONG_TRADE = "`macd_sig_long_trade`"
+SQL_SERVER_WINDOWS_COLUMN_MACD_FAST_LONG_HOLD = "`macd_fast_long_hold`"
+SQL_SERVER_WINDOWS_COLUMN_MACD_SLOW_LONG_HOLD = "`macd_slow_long_hold`"
+SQL_SERVER_WINDOWS_COLUMN_MACD_SIG_LONG_HOLD = "`macd_sig_long_hold`"
+SQL_SERVER_WINDOWS_COLUMN_RSI_SHORT_TRADE = "`rsi_short_trade`"
+SQL_SERVER_WINDOWS_COLUMN_RSI_LONG_TRADE = "`rsi_long_trade`"
+SQL_SERVER_WINDOWS_COLUMN_RSI_LONG_HOLD = "`rsi_long_hold`"
+SQL_SERVER_WINDOWS_COLUMN_VOL_SHORT_TRADE = "`vol_short_trade`"
+SQL_SERVER_WINDOWS_COLUMN_VOL_LONG_TRADE = "`vol_long_trade`"
+SQL_SERVER_WINDOWS_COLUMN_VOL_LONG_HOLD = "`vol_long_hold`"
+SQL_SERVER_WINDOWS_COLUMN_BOLB_SHORT_TRADE = "`bolb_short_trade`"
+SQL_SERVER_WINDOWS_COLUMN_BOLB_LONG_TRADE = "`bolb_long_trade`"
+SQL_SERVER_WINDOWS_COLUMN_BOLB_LONG_HOLD = "`bolb_long_hold`"
 
 # -----------
 # Model repos

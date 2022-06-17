@@ -38,9 +38,9 @@ def get_window(indicator: Indicator, trade_intent: TradeIntent, ticker: str,
     json_data = json.load(json_file)
     json_file.close()
     for item in json_data:
-        if item["NAME"] == ticker:
+        if item["name"] == ticker:
             if indicator == Indicator.MACD:
-                macd_indicators = ["FAST", "SLOW", "SIG"]
+                macd_indicators = ["fast", "slow", "sig"]
                 macd_fast = indicator.to_short_string() + "_" + macd_indicators[0] + "_" + trade_intent.value
                 macd_slow = indicator.to_short_string() + "_" + macd_indicators[1] + "_" + trade_intent.value
                 macd_sig = indicator.to_short_string() + "_" + macd_indicators[2] + "_" + trade_intent.value

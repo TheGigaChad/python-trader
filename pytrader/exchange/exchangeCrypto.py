@@ -69,9 +69,6 @@ class ExchangeCrypto(exchange.Exchange):
     def get_stale_requests(self):
         pass
 
-    def request(self, order: common.Order, request_type: common.RequestType, request_params=None):
-        super().request(order, request_type, request_params)
-
     def asset_to_json(self, request_type: Optional[common.RequestType] = common.RequestType.UNDEFINED) -> json:
         super().asset_to_json(request_type)
 

@@ -1,6 +1,8 @@
 import datetime
+from typing import Optional, Tuple
 
 import pytrader.sql.sqlDb as sqlDb
+from pytrader import common
 
 
 class SQLManager:
