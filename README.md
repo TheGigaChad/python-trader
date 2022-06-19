@@ -26,11 +26,25 @@ A stock trading bot that uses (no) machine learning to make price predictions.  
 attempt to find new options to purchase.
 
 ## Requirements
--   Python 3.5+
--   psutil
--   websocket-client
--   pytz
--   alpaca-trade-api
+- psutil
+- websocket-client
+- pytz
+- alpaca_trade_api
+- mysql-connector-python
+- pandas
+- yfinance
+- yahoo-fin
+- ta
+- numpy
+- pytest
+- python-dotenv
+- setuptools
+- pandas-ta
+- PyDispatcher
+- urllib3
+- yarl
+- tensorflow-gpu
+- scikit-learn
 
 ## Documentation
 When I create a website, we can add it here I guess.
