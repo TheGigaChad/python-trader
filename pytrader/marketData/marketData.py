@@ -41,12 +41,12 @@ def get_window(indicator: Indicator, trade_intent: TradeIntent, ticker: str,
         if item["name"] == ticker:
             if indicator == Indicator.MACD:
                 macd_indicators = ["fast", "slow", "sig"]
-                macd_fast = indicator.to_short_string() + "_" + macd_indicators[0] + "_" + trade_intent.value
-                macd_slow = indicator.to_short_string() + "_" + macd_indicators[1] + "_" + trade_intent.value
-                macd_sig = indicator.to_short_string() + "_" + macd_indicators[2] + "_" + trade_intent.value
+                macd_fast = indicator.to_short_string() + "_" + macd_indicators[0] + "_" + trade_intent.value.lower()
+                macd_slow = indicator.to_short_string() + "_" + macd_indicators[1] + "_" + trade_intent.value.lower()
+                macd_sig = indicator.to_short_string() + "_" + macd_indicators[2] + "_" + trade_intent.value.lower()
                 return item[macd_fast], item[macd_slow], item[macd_sig]
             else:
-                sql_column_name = indicator.to_short_string() + "_" + trade_intent.value
+                sql_column_name = indicator.to_short_string() + "_" + trade_intent.value.lower()
                 return item[sql_column_name]
 
     print(f"getWindow could not determine the Trade Intent {trade_intent} for the indicator {indicator}")
