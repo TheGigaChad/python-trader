@@ -5,11 +5,7 @@ from typing import Optional, List
 
 from yarl import URL
 
-from pytrader.algo.algo_tradeIntent import TradeIntent
-from pytrader.common.asset import Asset
-from pytrader.common.order import Order, OrderStatus
-from pytrader.common.requests import RequestType, ResponseStatus
-from pytrader.common.status import Status
+from pytrader import common
 
 
 class ExchangeName(enum.Enum):
@@ -36,8 +32,8 @@ class ExchangeRequestResponse:
     Response from the exchange relating to the request.  This contains a status and optional data
     """
 
-    def __init__(self, response_type: ResponseStatus, request_params=None, listen_required=False):
-        self.__type: ResponseStatus = response_type
+    def __init__(self, response_type: common.ResponseStatus, request_params=None, listen_required=False):
+        self.__type: common.ResponseStatus = response_type
         self.__listen_required: bool = listen_required
         self.__data = request_params
 
@@ -67,8 +63,8 @@ class Exchange(ABC):
         self.__secret: str = self.get_secret()
         self.__websocket: str = self.get_websocket()
         self.__cash: float = self.get_cash()
-        self.__holdings: List[Asset] = self.get_holdings()
-        self.__status: Status = Status.RUNNING
+        self.__holdings: List[common.Asset] = self.get_holdings()
+        self.__status: common.State = common.State.RUNNING
 
     @property
     def name(self):
@@ -83,7 +79,7 @@ class Exchange(ABC):
         return self.__cash
 
     @property
-    def holdings(self) -> List[Asset]:
+    def holdings(self) -> List[common.Asset]:
         return self.__holdings
 
     @property
@@ -127,7 +123,7 @@ class Exchange(ABC):
         """
 
     @abstractmethod
-    def get_holdings(self) -> List[Asset]:
+    def get_holdings(self) -> List[common.Asset]:
         """
         Returns the holdings within the exchange. \n
         :return: list of owned assets.
@@ -147,7 +143,7 @@ class Exchange(ABC):
         """
 
     @abstractmethod
-    def fulfill(self, order: Order) -> ResponseStatus:
+    def fulfill(self, order: common.Order) -> common.ResponseStatus:
         """
         Determines whether to buy or sell the stock.
         @param order: The order for the asset.
@@ -155,7 +151,7 @@ class Exchange(ABC):
         """
 
     @abstractmethod
-    def buy(self, order: Order) -> bool:
+    def buy(self, order: common.Order) -> bool:
         """
         the buy method for the exchange. \n
         :param order: the order that we are making a transaction on.
@@ -170,7 +166,7 @@ class Exchange(ABC):
         """
 
     @abstractmethod
-    def sell(self, order: Order) -> bool:
+    def sell(self, order: common.Order) -> bool:
         """
         the sell method for the exchange. \n
         :param order: the order that we are making a transaction on.
@@ -193,7 +189,7 @@ class Exchange(ABC):
         # TODO - we need to consider how to assess this.
 
     @abstractmethod
-    def request_quantity(self, asset: Asset) -> float:
+    def request_quantity(self, asset: common.Asset) -> float:
         """
         determines the quantity of the asset.
         :param asset: the asset we are assessing.
@@ -201,15 +197,15 @@ class Exchange(ABC):
         """
 
     @abstractmethod
-    def get_trade_intent(self, asset: Asset) -> TradeIntent:
+    def get_trade_intent(self, asset: common.Asset) -> common.TradeIntent:
         """
-        Determines the trade intent based on SQL data.
+        Determines the trade intent based on sql data.
         @param asset:
         @return:
         """
 
     @abstractmethod
-    def update_order_status(self, order: Order) -> OrderStatus:
+    def update_order_status(self, order: common.Order) -> common.OrderStatus:
         """
         determines the order status based on the order id and the status within the exchange.
         @param order: the order being inspected
@@ -217,19 +213,12 @@ class Exchange(ABC):
         """
 
     @abstractmethod
-    def determine_value(self, asset: Asset) -> float:
+    def determine_value(self, asset: common.Asset) -> float:
         """
         returns the current value of the asset.
         :param asset: asset being evaluated.
         :return: value in relative currency.
         """
-
-    def ignore_response(self) -> bool:
-        """
-        Determines whether we ignore the response for the exchange, so we do not get trapped in a forever loop waiting
-        for a response.  This is only valid for stock markets, as crypto is 24/7.
-        """
-        return False
 
     def get_stale_requests(self):
         """
@@ -237,29 +226,16 @@ class Exchange(ABC):
         """
         pass
 
-    def request(self, order: Order, request_type: RequestType, request_params=None):
-        if request_type == RequestType.INFO:
-            print(f"info requested for {order.asset.name} from the exchange {self.__name.value}")
-        elif request_type == RequestType.UPDATE:
-            # TODO - exchange logic
-            return ExchangeRequestResponse(response_type=ResponseStatus.SUCCESSFUL)
-        elif request_type == RequestType.INFO:
-            return ExchangeRequestResponse(response_type=ResponseStatus.SUCCESSFUL, request_params=request_params)
-        elif request_type == RequestType.BUY:
-            return self.__buy(order)
-        elif request_type == RequestType.SELL:
-            return self.__sell(order)
-
-    def asset_to_json(self, request_type: Optional[RequestType] = RequestType.UNDEFINED) -> json:
+    def asset_to_json(self, request_type: Optional[common.RequestType] = common.RequestType.UNDEFINED) -> json:
         # TODO - this needs a lot of work
         """
         returns the asset information as a JSON item to be easily readable
         """
-        if request_type == RequestType.UNDEFINED:
+        if request_type == common.RequestType.UNDEFINED:
             return json.dumps(self)
         return json.dumps(self.__name)
 
-    def add_asset(self, asset: Asset):
+    def add_asset(self, asset: common.Asset):
         """
         Add the asset to the exchange, then ensure the asset info is up-to-date. \n
         :param asset: the asset we are adding to the holdings.
@@ -267,5 +243,5 @@ class Exchange(ABC):
         if asset not in self.__holdings:
             self.__holdings.append(asset)
         else:
-            request_type = RequestType.UPDATE
+            request_type = common.RequestType.UPDATE
             self.request(request_type=request_type, request_params=self.asset_to_json(request_type=request_type))

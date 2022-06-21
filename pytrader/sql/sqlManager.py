@@ -1,19 +1,21 @@
 import datetime
+from typing import Optional, Tuple
 
-from pytrader.SQL.sqlDb import sqlDbWindows, sqlDbBuySellThresholds, sqlDbTrades, sqlDbOpenTrades
+import pytrader.sql.sqlDb as sqlDb
+from pytrader import common
 
 
-class SQLDbManager:
+class SQLManager:
     """
-    Holds all SQL databases and makes querying easier.
+    Holds all sql databases and makes querying easier.
     """
 
     def __init__(self):
         self.__last_updated: datetime.datetime = datetime.datetime.min
-        self.__windowDb: sqlDbWindows = sqlDbWindows.SQLDbWindows()
-        self.__buySellThresholdDb: sqlDbBuySellThresholds = sqlDbBuySellThresholds.SQLDbBuySellThresholds()
-        self.__tradesDb: sqlDbTrades = sqlDbTrades.SQLDbTrades()
-        self.__openTradesDb: sqlDbOpenTrades = sqlDbOpenTrades.SQLDbOpenTrades()
+        self.__windowDb: sqlDb.sqlDbWindows = sqlDb.SQLDbWindows()
+        self.__buySellThresholdDb: sqlDb.sqlDbBuySellThresholds = sqlDb.sqlDbBuySellThresholds.SQLDbBuySellThresholds()
+        self.__tradesDb: sqlDb.sqlDbTrades = sqlDb.sqlDbTrades.SQLDbTrades()
+        self.__openTradesDb: sqlDb.sqlDbOpenTrades = sqlDb.sqlDbOpenTrades.SQLDbOpenTrades()
 
     @property
     def window_db(self):
@@ -37,7 +39,7 @@ class SQLDbManager:
 
     def update_local_stores(self):
         """
-        Updates local stored SQL data to be used for reference later
+        Updates local stored sql data to be used for reference later
         """
         self.__windowDb.update_local_stores()
         self.__last_updated = datetime.datetime.now()

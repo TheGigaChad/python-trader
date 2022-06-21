@@ -1,7 +1,7 @@
 import enum
 
 
-class Status(enum.Enum):
+class State(enum.Enum):
     """
     enum corresponding to the status of the manager
     """

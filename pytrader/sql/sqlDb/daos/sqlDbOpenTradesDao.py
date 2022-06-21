@@ -1,8 +1,6 @@
 import datetime
 
-from pytrader.algo.algo_tradeIntent import TradeIntent
-from pytrader.common.asset import AssetType
-from pytrader.common.order import OrderType
+from pytrader import common
 
 
 class SQLDbOpenTradesDao:
@@ -10,12 +8,12 @@ class SQLDbOpenTradesDao:
     dao  that handles the data types from the sql response.
     """
 
-    def __init__(self, name: str, asset_type: AssetType, order_type: OrderType, trade_intent: TradeIntent, qty: float,
-                 order_id: int, last_updated: datetime.datetime):
+    def __init__(self, name: str, asset_type: common.AssetType, order_type: common.OrderType,
+                 trade_intent: common.TradeIntent, qty: float, order_id: int, last_updated: datetime.datetime):
         self.__name: str = name
-        self.__order_type: OrderType = order_type
-        self.__asset_type: AssetType = asset_type
-        self.__trade_intent: TradeIntent = trade_intent
+        self.__order_type: common.OrderType = order_type
+        self.__asset_type: common.AssetType = asset_type
+        self.__trade_intent: common.TradeIntent = trade_intent
         self.__order_quantity: float = qty
         self.__order_id: int = order_id
         self.__timestamp: datetime.datetime = last_updated

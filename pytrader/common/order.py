@@ -1,7 +1,7 @@
 import enum
 from dataclasses import dataclass, field
 
-from pytrader.common.asset import Asset
+from pytrader import common
 
 
 class OrderStatus(enum.Enum):
@@ -28,36 +28,6 @@ class OrderType(enum.Enum):
     PRICE_TEST_SELL = "PRICE_TEST_SELL"
 
 
-# class Order:
-#     """
-#     contains the data that gets passed to the request call.
-#     """
-#
-#     def __init__(self, order_type: OrderType, asset: Asset):
-#         self.__type: OrderType = order_type
-#         self.__asset: Asset = asset
-#         self.__status: OrderStatus = OrderStatus.INIT
-#
-#     def __repr__(self):
-#         return f"Order(type: {self.__type}, asset: {self.__asset}, status: {self.__status})"
-#
-#     @property
-#     def status(self) -> OrderStatus:
-#         return self.__status
-#
-#     @status.setter
-#     def status(self, new_status: OrderStatus):
-#         self.__status = new_status
-#
-#     @property
-#     def type(self) -> OrderType:
-#         return self.__type
-#
-#     @property
-#     def asset(self) -> Asset:
-#         return self.__asset
-
-
 @dataclass
 class Order:
     """
@@ -69,7 +39,7 @@ class Order:
     """
 
     __type: OrderType
-    __asset: Asset
+    __asset: common.Asset
     __status: OrderStatus = field(init=False, default=OrderStatus.INIT)
 
     def __repr__(self):
@@ -83,7 +53,7 @@ class Order:
         return self.__type
 
     @property
-    def asset(self) -> Asset:
+    def asset(self) -> common.Asset:
         return self.__asset
 
     @property

@@ -1,7 +1,7 @@
 import datetime
 import enum
 
-from pytrader.algo.algo_tradeIntent import TradeIntent
+from pytrader.common.tradeIntent import TradeIntent
 
 
 class AssetType(enum.Enum):

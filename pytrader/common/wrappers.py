@@ -3,7 +3,7 @@ import time
 
 def timed(function):
     """
-    Wrapper to time the function call, useful for SQL and other tasks that could potentially take a long time.
+    Wrapper to time the function call, useful for sql and other tasks that could potentially take a long time.
     TODO - Logging implementation (pass the print to correct log file, default to print if necessary)?
     :param function: the function we want timed.
     :return:

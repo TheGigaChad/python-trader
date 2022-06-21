@@ -1,5 +1,6 @@
-from pytrader.config import USER_LONG_TERM_TRADE_RATIO, USER_SHORT_TERM_TRADE_RATIO, USER_RISK_PARITY_RATIO
+from pytrader import config
 
 
 def test_trade_ratios():
-    assert (USER_RISK_PARITY_RATIO + USER_SHORT_TERM_TRADE_RATIO + USER_LONG_TERM_TRADE_RATIO) == 1
+    assert (config.USER_RISK_PARITY_RATIO + config.USER_SHORT_TERM_TRADE_RATIO + config.USER_LONG_TERM_TRADE_RATIO) == 1
+
