@@ -55,4 +55,3 @@ def update_window_data(file_name: Optional[str] = "algo_windows.json"):
         assert outfile.writable()
         outfile.write(json_window_data)
         outfile.close()
-

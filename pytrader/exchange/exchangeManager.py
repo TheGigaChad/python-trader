@@ -15,15 +15,15 @@ class ExchangeManager:
     Handles the exchanges and different types of requests etc. This should be interacted with by the different managers.
     """
 
-    def __init__(self, is_testing: Optional[bool] = False):
-        self.__status = common.Status.UNKNOWN
+    def __init__(self, run_type: Optional[common.RunType] = common.RunType.PRODUCTION):
+        self.__status = common.State.UNKNOWN
         self.__sender: common.Sender = common.Sender.EXCHANGE_MANAGER
         self.__signal: common.Signal = common.Signal.EXCHANGE_MANAGER
         self.__order_queue: List[common.Order] = []
         self.__sql_manager: sql.SQLManager = sql.SQLManager()
         self.__paper_stock_exchange = exchange.ExchangeStockPaper()
-        self.__testing: bool = is_testing
-        self.__trading_manager_status: common.Status = common.Status.UNKNOWN
+        self.__run_type: common.RunType = run_type
+        self.__trading_manager_status: common.State = common.State.UNKNOWN
         self.initialise()
 
     @property
@@ -37,6 +37,9 @@ class ExchangeManager:
     @property
     def crypto_exchange(self):
         return self.crypto_exchange
+
+    def fulfill_order(self, order: common.Order) -> common.GenericStatus:
+        return self.__fulfill_order(order)
 
     def __add_order_to_queue(self, order: common.Order):
         """
@@ -57,7 +60,7 @@ class ExchangeManager:
                 order.asset.id = self.__sql_manager.open_trades_db.generate_new_asset_id(order)
         return order
 
-    def __fulfill_order(self, order: common.Order):
+    def __fulfill_order(self, order: common.Order) -> common.GenericStatus:
         """
         Fulfills the order to the correct exchange.
         :param order: Order being requested.
@@ -74,6 +77,8 @@ class ExchangeManager:
         # update sql tables
         response: sqlDb.SQLQueryResponseType = self.__sql_manager.open_trades_db.commit_trade(order)
         Log.i(f'Order to {order.type.name} {order.asset.qty} {order.asset.name} was {response.name}.')
+
+        return common.GenericStatus.SUCCESSFUL
 
     def __remove_order(self, order: common.Order):
         """
@@ -127,7 +132,7 @@ class ExchangeManager:
             return False
 
     def __init(self):
-        self.__status = common.Status.INIT
+        self.__status = common.State.INIT
         dispatcher.connect(self.__dispatcher_receive, signal=common.Signal.TRADE_MANAGER.value,
                            sender=common.Signal.TRADE_MANAGER.value)
 
@@ -135,13 +140,13 @@ class ExchangeManager:
         self.__init()
         self.__get_existing_open_trades()
         self.request_trading_manager_status()
-        self.__status = common.Status.READY
-        if not self.__testing:
-            while self.__trading_manager_status != common.Status.READY:
+        self.__status = common.State.READY
+        if self.__run_type == common.RunType.PRODUCTION:
+            while self.__trading_manager_status != common.State.READY:
                 time.sleep(2)
                 Log.i(f"initialise : re-requesting TM status. status is {self.__trading_manager_status}")
                 self.request_trading_manager_status()
-            self.__status = common.Status.RUNNING
+            self.__status = common.State.RUNNING
             while self.is_running():
                 time.sleep(1)
                 # TODO - this should be reactive or something
@@ -158,28 +163,28 @@ class ExchangeManager:
         Determines whether the manager is running.
         :return: running status
         """
-        return self.__status == common.Status.RUNNING
+        return self.__status == common.State.RUNNING
 
     def is_idle(self) -> bool:
         """
         Determines whether the manager is idle.
         :return: idle status
         """
-        return self.__status == common.Status.IDLE
+        return self.__status == common.State.IDLE
 
     def is_error(self) -> bool:
         """
         Determines whether the manager is in an error state.
         :return: error status
         """
-        return self.__status == common.Status.ERROR
+        return self.__status == common.State.ERROR
 
     def is_stopped(self) -> bool:
         """
         Determines whether the manager is stopped.
         :return: stopped status
         """
-        return self.__status == common.Status.STOPPED
+        return self.__status == common.State.STOPPED
 
     def request_trading_manager_status(self):
         """
@@ -276,7 +281,7 @@ class ExchangeManager:
         Finds all open trades within the exchanges and appends them to the queue. \n
         :return: none
         """
-        if self.__testing:
+        if self.__run_type == common.RunType.TEST:
             return
         open_trades: [sqlDb.daos.SQLDbOpenTradesDao] = self.__sql_manager.open_trades_db.get_all_trades()
         for open_trade in open_trades:
@@ -354,7 +359,7 @@ class ExchangeManager:
                         buy_threshold=buy_threshold, sell_threshold=sell_threshold, asset=asset,
                         signal=self.__signal.value, sender=self.__sender.value)
 
-    def __dispatcher_receive_status_response(self, status: common.Status):
+    def __dispatcher_receive_status_response(self, status: common.State):
         """
         Handles the status response from the Trading Manager.
         :param status: the status of the Trading Manager.

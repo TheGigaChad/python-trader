@@ -10,7 +10,7 @@ def main():
 
     # Update all model data
     model_manager = models.ModelManager()
-    model_manager.load_all()
+    model_manager.populate_local_repo()
 
     # start the managers
     exchange_thread = threading.Thread(target=exchange.ExchangeManager)

@@ -64,7 +64,7 @@ class Exchange(ABC):
         self.__websocket: str = self.get_websocket()
         self.__cash: float = self.get_cash()
         self.__holdings: List[common.Asset] = self.get_holdings()
-        self.__status: common.Status = common.Status.RUNNING
+        self.__status: common.State = common.State.RUNNING
 
     @property
     def name(self):

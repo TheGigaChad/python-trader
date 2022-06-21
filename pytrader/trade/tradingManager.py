@@ -53,11 +53,11 @@ class TradingManager:
 
     def __init__(self):
         self.__threads = None
-        self.__status = common.Status.STARTING
+        self.__status = common.State.STARTING
         self.__assets: Optional[List[common.Asset]] = None
         self.__sender: common.Sender = common.Sender.TRADE_MANAGER
         self.__signal: common.Signal = common.Signal.TRADE_MANAGER
-        self.__exchange_manager_status: common.Status = common.Status.UNKNOWN
+        self.__exchange_manager_status: common.State = common.State.UNKNOWN
         self.start()
 
     @property
@@ -73,21 +73,22 @@ class TradingManager:
                            sender=common.Signal.EXCHANGE_MANAGER.value)
 
         # TODO - probe ALL exchanges for asset list
-        self.__status = common.Status.STARTING
+        self.__status = common.State.STARTING
         Log.d("TradingManager is waiting on Exchange Manager for the list of owned assets.")
         while self.__assets is None:
             # wait for the list of owned assets.
             time.sleep(3)
             self.__get_owned_assets()
-        self.__status = common.Status.READY
-        while self.__exchange_manager_status != common.Status.RUNNING:
+        self.__status = common.State.READY
+        while self.__exchange_manager_status != common.State.RUNNING:
             time.sleep(2)
             self.request_exchange_manager_status()
             Log.d("TM re-requesting EM status")
-        self.__status = common.Status.RUNNING
+        self.__status = common.State.RUNNING
         Log.d(f"TradingManager is {self.__status.name}.")
-        while common.Status.RUNNING:
+        while common.State.RUNNING:
             # Use this as a rudimentary switch for testing
+            # TODO - remove this crapola
             if config.DEV_TEST_MODE:
                 # Loop buying some stocks for test purposes
                 time.sleep(6)
@@ -107,28 +108,28 @@ class TradingManager:
         Determines whether the manager is running.
         :return: running status
         """
-        return self.__status == common.Status.RUNNING
+        return self.__status == common.State.RUNNING
 
     def is_idle(self) -> bool:
         """
         Determines whether the manager is running.
         :return: idle status
         """
-        return self.__status == common.Status.IDLE
+        return self.__status == common.State.IDLE
 
     def is_error(self) -> bool:
         """
         Determines whether the manager is in an error state.
         :return: error status
         """
-        return self.__status == common.Status.ERROR
+        return self.__status == common.State.ERROR
 
     def is_stopped(self) -> bool:
         """
         Determines whether the manager is stopped.
         :return: stopped status
         """
-        return self.__status == common.Status.STOPPED
+        return self.__status == common.State.STOPPED
 
     def request_exchange_manager_status(self):
         """
@@ -216,7 +217,7 @@ class TradingManager:
                         signal=self.__signal.value,
                         sender=self.__sender.value)
 
-    def __dispatcher_receive_status_response(self, status: common.Status):
+    def __dispatcher_receive_status_response(self, status: common.State):
         """
         Called when we receive a response from the Exchange Manager status request.
         """

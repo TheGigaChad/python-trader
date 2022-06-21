@@ -1,0 +1,10 @@
+import enum
+
+
+class GenericStatus(enum.Enum):
+    SUCCESSFUL = "SUCCESSFUL"
+    UNSUCCESSFUL = "UNSUCCESSFUL"
+    UNKNOWN = "UNKNOWN"
+    DELETING = "DELETING"
+    CREATING = "CREATING"
+    DOWNLOADING = "DOWNLOADING"

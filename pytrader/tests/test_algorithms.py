@@ -3,9 +3,8 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from pytrader.common.indicator import Indicator
-from pytrader.common.tradeIntent import TradeIntent
-from pytrader.marketData import marketData
+from pytrader import common
+from pytrader import marketData
 
 THIS_DIR = Path(__file__).parent
 MY_DATA_PATH = THIS_DIR / 'data/TSLA_historical_data.csv'
@@ -18,8 +17,8 @@ def test_rsi():
     """
     Tests the relative strength Index method against a pre-calculated value.
     """
-    trade_intent = TradeIntent.SHORT_TRADE
-    indicator = Indicator.RSI
+    trade_intent = common.TradeIntent.SHORT_TRADE
+    indicator = common.Indicator.RSI
     window = marketData.get_window(indicator, trade_intent, STOCK_NAME, STOCK_JSON)
     rsi_data = marketData.get_RSI(window, STOCK_DATA).dropna()
     first_point = rsi_data.iloc[0]
@@ -31,8 +30,8 @@ def test_bollinger():
     """
     Tests the Relative Strength Index method against a pre-calculated value.
     """
-    trade_intent = TradeIntent.SHORT_TRADE
-    indicator = Indicator.BOLLINGER
+    trade_intent = common.TradeIntent.SHORT_TRADE
+    indicator = common.Indicator.BOLLINGER
     window = marketData.get_window(indicator, trade_intent, STOCK_NAME, STOCK_JSON)
     bollinger_data = marketData.append_bollinger(window, STOCK_DATA).dropna()
     first_point = bollinger_data.iloc[0]
@@ -45,8 +44,8 @@ def test_sma():
     """
     Tests theSimple Moving Average method against a pre-calculated value.
     """
-    trade_intent = TradeIntent.SHORT_TRADE
-    indicator = Indicator.SMA
+    trade_intent = common.TradeIntent.SHORT_TRADE
+    indicator = common.Indicator.SMA
     window = marketData.get_window(indicator, trade_intent, STOCK_NAME, STOCK_JSON)
     sma_data = marketData.get_SMA(window, STOCK_DATA.loc[:, 'Adj Close']).dropna()
     first_point = sma_data.iloc[0]
@@ -59,8 +58,8 @@ def test_macd():
     """
     Tests the Moving Average Convergence Divergence method against a pre-calculated value.
     """
-    trade_intent = TradeIntent.SHORT_TRADE
-    indicator = Indicator.MACD
+    trade_intent = common.TradeIntent.SHORT_TRADE
+    indicator = common.Indicator.MACD
     window_fast, window_slow, window_sig = marketData.get_window(indicator, trade_intent, STOCK_NAME, STOCK_JSON)
     macd_data = marketData.get_MACD(window_fast, window_slow, window_sig, STOCK_DATA).dropna()
     first_point = macd_data.iloc[0]
@@ -74,8 +73,8 @@ def test_ema():
     """
     Tests the Exponential Moving Average method against a pre-calculated value.
     """
-    trade_intent = TradeIntent.SHORT_TRADE
-    indicator = Indicator.EMA
+    trade_intent = common.TradeIntent.SHORT_TRADE
+    indicator = common.Indicator.EMA
     window = marketData.get_window(indicator, trade_intent, STOCK_NAME, STOCK_JSON)
     macd_data = marketData.get_EMA(window, STOCK_DATA).dropna()
     first_point = macd_data.iloc[0]
@@ -87,7 +86,7 @@ def test_window_data():
     """
     Tests the relative strength Index method against a pre-calculated value.
     """
-    trade_intent = TradeIntent.SHORT_TRADE
-    indicator = Indicator.EMA
+    trade_intent = common.TradeIntent.SHORT_TRADE
+    indicator = common.Indicator.EMA
     window = marketData.get_window(indicator, trade_intent, STOCK_NAME, STOCK_JSON)
     assert window == 7
