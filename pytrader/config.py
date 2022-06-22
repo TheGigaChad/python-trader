@@ -1,11 +1,9 @@
 import os
-from os.path import join, dirname
 
 from alpaca_trade_api.common import URL
 from dotenv import load_dotenv
 
-dotenv_path = join(dirname(__file__), '.env')
-load_dotenv(dotenv_path)
+load_dotenv()
 
 # --------------
 # Exchanges Info
