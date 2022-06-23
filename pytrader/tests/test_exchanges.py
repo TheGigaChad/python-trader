@@ -1,11 +1,11 @@
 import alpaca_trade_api as trade_api
 import pytest
-from yarl import URL
+from alpaca_trade_api.common import URL
 
 from pytrader import config, exchange, common
 
 # ALPACA TESTS
-ALPACA_API = trade_api.REST(config.ALPACA_PAPER_KEY, config.ALPACA_PAPER_SECRET, config.ALPACA_PAPER_ADDRESS)
+ALPACA_API = trade_api.REST(config.ALPACA_PAPER_KEY, config.ALPACA_PAPER_SECRET, URL(config.ALPACA_PAPER_ADDRESS))
 RUN_TYPE: common.RunType = common.RunType.TEST
 
 
