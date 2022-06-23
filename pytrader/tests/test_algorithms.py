@@ -6,11 +6,11 @@ import pytest
 from pytrader import common
 from pytrader import marketData
 
-THIS_DIR = Path(__file__).parent
-MY_DATA_PATH = THIS_DIR / 'data/TSLA_historical_data.csv'
-STOCK_DATA = pd.read_csv(MY_DATA_PATH)
-STOCK_NAME = "TSLA"
-STOCK_JSON = 'data/test_algo_windows.json'
+DIR_PATH: Path = Path(__file__).parent
+DATA_DIR_PATH: Path = DIR_PATH / 'data'
+STOCK_DATA = pd.read_csv(DATA_DIR_PATH / "TSLA_historical_data.csv")
+STOCK_NAME: str = "TSLA"
+WINDOWS_TEST_JSON_PATH: Path = DIR_PATH / "data/test_algo_windows.json"
 
 
 def test_rsi():
@@ -19,7 +19,7 @@ def test_rsi():
     """
     trade_intent = common.TradeIntent.SHORT_TRADE
     indicator = common.Indicator.RSI
-    window = marketData.get_window(indicator, trade_intent, STOCK_NAME, STOCK_JSON)
+    window = marketData.get_window(indicator, trade_intent, STOCK_NAME, str(WINDOWS_TEST_JSON_PATH))
     rsi_data = marketData.get_RSI(window, STOCK_DATA).dropna()
     first_point = rsi_data.iloc[0]
     last_point = rsi_data.iloc[-1]
@@ -32,7 +32,7 @@ def test_bollinger():
     """
     trade_intent = common.TradeIntent.SHORT_TRADE
     indicator = common.Indicator.BOLLINGER
-    window = marketData.get_window(indicator, trade_intent, STOCK_NAME, STOCK_JSON)
+    window = marketData.get_window(indicator, trade_intent, STOCK_NAME, str(WINDOWS_TEST_JSON_PATH))
     bollinger_data = marketData.append_bollinger(window, STOCK_DATA).dropna()
     first_point = bollinger_data.iloc[0]
     last_point = bollinger_data.iloc[-1]
@@ -46,7 +46,7 @@ def test_sma():
     """
     trade_intent = common.TradeIntent.SHORT_TRADE
     indicator = common.Indicator.SMA
-    window = marketData.get_window(indicator, trade_intent, STOCK_NAME, STOCK_JSON)
+    window = marketData.get_window(indicator, trade_intent, STOCK_NAME, str(WINDOWS_TEST_JSON_PATH))
     sma_data = marketData.get_SMA(window, STOCK_DATA.loc[:, 'Adj Close']).dropna()
     first_point = sma_data.iloc[0]
     last_point = sma_data.iloc[-1]
@@ -60,7 +60,8 @@ def test_macd():
     """
     trade_intent = common.TradeIntent.SHORT_TRADE
     indicator = common.Indicator.MACD
-    window_fast, window_slow, window_sig = marketData.get_window(indicator, trade_intent, STOCK_NAME, STOCK_JSON)
+    window_fast, window_slow, window_sig = marketData.get_window(indicator, trade_intent, STOCK_NAME,
+                                                                 str(WINDOWS_TEST_JSON_PATH))
     macd_data = marketData.get_MACD(window_fast, window_slow, window_sig, STOCK_DATA).dropna()
     first_point = macd_data.iloc[0]
     last_point = macd_data.iloc[-1]
@@ -75,7 +76,7 @@ def test_ema():
     """
     trade_intent = common.TradeIntent.SHORT_TRADE
     indicator = common.Indicator.EMA
-    window = marketData.get_window(indicator, trade_intent, STOCK_NAME, STOCK_JSON)
+    window = marketData.get_window(indicator, trade_intent, STOCK_NAME, str(WINDOWS_TEST_JSON_PATH))
     macd_data = marketData.get_EMA(window, STOCK_DATA).dropna()
     first_point = macd_data.iloc[0]
     last_point = macd_data.iloc[-1]
@@ -88,5 +89,5 @@ def test_window_data():
     """
     trade_intent = common.TradeIntent.SHORT_TRADE
     indicator = common.Indicator.EMA
-    window = marketData.get_window(indicator, trade_intent, STOCK_NAME, STOCK_JSON)
+    window = marketData.get_window(indicator, trade_intent, STOCK_NAME, str(WINDOWS_TEST_JSON_PATH))
     assert window == 7
