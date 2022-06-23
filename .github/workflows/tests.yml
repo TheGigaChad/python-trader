@@ -31,7 +31,7 @@ jobs:
       env:
          ALPACA_PAPER_KEY: ${{ secrets.ALPACA_PAPER_KEY }}
          ALPACA_PAPER_SECRET: ${{ secrets.ALPACA_PAPER_SECRET }}
-         ALPACA_PAPER_ADDRESS: URL = URL(${{ secrets.ALPACA_PAPER_ADDRESS }})
+         ALPACA_PAPER_ADDRESS: ${{ secrets.ALPACA_PAPER_ADDRESS }}
          ALPACA_PAPER_ACCOUNT_NUMBER: ${{ secrets.ALPACA_PAPER_ACCOUNT_NUMBER }}
          ALPACA_PAPER_WEBSOCKET: ${{ secrets.ALPACA_PAPER_WEBSOCKET }}
          SQL_SERVER_HOST: ${{ secrets.SQL_SERVER_HOST }}
