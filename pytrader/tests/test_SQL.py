@@ -1,5 +1,6 @@
 import datetime
 import json
+from pathlib import Path
 from typing import List
 
 import mysql.connector as mysql
@@ -8,6 +9,9 @@ from pytrader import cfg as cfg
 from pytrader import common
 from pytrader.marketData.marketData_SQL import get_sql_window_data_as_json, update_window_data
 from pytrader.sql import sqlDb as sqlDb
+
+THIS_DIR = Path(__file__).parent
+DATA_PATH = THIS_DIR / 'data'
 
 
 @common.timed
@@ -68,7 +72,7 @@ def test_sql_window_data_to_json():
 
 @common.timed
 def test_sql_save_window_data():
-    json_file = "data/test_algo_windows.json"
+    json_file: str = str(DATA_PATH / "test_algo_windows.json")
 
     # empty the data
     open(json_file, 'w').close()
