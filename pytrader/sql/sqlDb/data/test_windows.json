@@ -1,0 +1,29 @@
+[
+ {
+  "name": "TSLA",
+  "sma_short_trade": 7,
+  "sma_long_trade": 14,
+  "sma_long_hold": 21,
+  "ema_short_trade": 7,
+  "ema_long_trade": 14,
+  "ema_long_hold": 21,
+  "macd_fast_short_trade": 12,
+  "macd_slow_short_trade": 26,
+  "macd_sig_short_trade": 9,
+  "macd_fast_long_trade": 12,
+  "macd_slow_long_trade": 26,
+  "macd_sig_long_trade": 9,
+  "macd_fast_long_hold": 12,
+  "macd_slow_long_hold": 26,
+  "macd_sig_long_hold": 9,
+  "rsi_short_trade": 7,
+  "rsi_long_trade": 14,
+  "rsi_long_hold": 21,
+  "vol_short_trade": 7,
+  "vol_long_trade": 14,
+  "vol_long_hold": 21,
+  "bolb_short_trade": 20,
+  "bolb_long_trade": 40,
+  "bolb_long_hold": 60
+ }
+]
