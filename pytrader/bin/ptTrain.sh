@@ -7,6 +7,8 @@ managers from here.
 #!/bin/sh
 
 FIRST_ARGUMENT="$1"
+SECOND_ARGUMENT="$2"
+THIRD_ARGUMENT="$3"
 
-echo "(TBC) This is the script to return the status of the manager $FIRST_ARGUMENT"
+echo "This is the way to run "
 sleep 5

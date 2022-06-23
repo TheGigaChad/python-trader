@@ -7,15 +7,14 @@ import boto3
 from tensorflow.python import keras
 from urllib3.util import Url
 
-from pytrader import common, config
-from pytrader.models.modelPackage import ModelPackage
+from pytrader import common, config, models
 
 Log: common.Log = common.Log(__file__)
 
 
 class ModelManager:
     """
-    Handles the retrieval of the models used by the trade manager subprocesses to determine trade opportunities.
+    Handles the retrieval of the models. Used by the trade manager subprocesses to determine trade opportunities.
     """
 
     def __init__(self):
@@ -28,7 +27,7 @@ class ModelManager:
     def directory(self):
         return self.__local_repo_dir
 
-    def get_model(self, asset: common.Asset) -> Optional[ModelPackage]:
+    def get_model(self, asset: common.Asset) -> Optional[models.ModelPackage]:
         """
         Retrieves the model as a package from the local directory.
         :param asset: the asset we are trying to find the model for.
@@ -38,13 +37,13 @@ class ModelManager:
         model_path: Path = self.__local_repo_dir / asset_filename
         try:
             model: keras.Model = keras.models.load_model(model_path)
-            return ModelPackage(asset.name, model_path, model)
+            return models.ModelPackage(asset.name, model_path, model)
         except FileNotFoundError as e:
             Log.e(f"No model exists for {asset.name}")
             return None
 
     @staticmethod
-    def delete_local_model(model: ModelPackage) -> common.GenericStatus:
+    def delete_local_model(model: models.ModelPackage) -> common.GenericStatus:
         """
         Deletes the local model from the directory.
         :param model: model to be deleted.
@@ -93,7 +92,7 @@ class ModelManager:
 
         return status
 
-    def upload_cloud_model(self, model: ModelPackage) -> common.GenericStatus:
+    def upload_cloud_model(self, model: models.ModelPackage) -> common.GenericStatus:
         """
         Uploads the specified file to the aws s3 bucket.
         :param model: the model package containing all model data we need to upload (name, file, dir)
@@ -108,7 +107,7 @@ class ModelManager:
         )
         return common.GenericStatus.SUCCESSFUL
 
-    def delete_cloud_model(self, model: ModelPackage) -> common.GenericStatus:
+    def delete_cloud_model(self, model: models.ModelPackage) -> common.GenericStatus:
         """
         Deletes the cloud model specified.
         :param model: model to be deleted.
@@ -120,7 +119,7 @@ class ModelManager:
         s3_res.Object(self.__bucket, model.name).delete()
         return common.GenericStatus.SUCCESSFUL
 
-    def replace_cloud_model(self, model: ModelPackage) -> common.GenericStatus:
+    def replace_cloud_model(self, model: models.ModelPackage) -> common.GenericStatus:
         """
         Deletes the model in the bucket, then uploads the specified model to the aws s3 bucket.
         :param model: the model package containing all model data we need to upload (name, file, dir)
@@ -136,11 +135,23 @@ class ModelManager:
 
         return status
 
-    def create_model_package(self, asset: common.Asset) -> ModelPackage:
+    def create_existing_model_package(self, asset_name: str) -> models.ModelPackage:
         """
         Creates a model package when given an asset.
-        :param asset: the asset we want a model package for.
+        :param asset_name: the asset we want a model package for.
         :return: the model package
         """
-        path: Path = self.__local_repo_dir / (asset.name + ".h5")
-        return ModelPackage(asset.name, path, keras.models.load_model(path))
+        path: Path = self.__local_repo_dir / (asset_name + ".h5")
+        return models.ModelPackage(asset_name, path, keras.models.load_model(path))
+
+    def create_new_model_package(self, asset_name: str) -> models.ModelPackage:
+        """
+        Creates a model package when given an asset.
+        :param asset_name: the asset we want a model package for.
+        :param model: the model we want to create a package for.
+        :return: the model package
+        """
+        # TODO
+        path: Path = self.__local_repo_dir / (asset_name + ".h5")
+        model: keras.Model = keras.Model()
+        return models.ModelPackage(asset_name, path, model)
