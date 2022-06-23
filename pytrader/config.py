@@ -1,16 +1,17 @@
 import os
+from os.path import join, dirname
 
-from alpaca_trade_api.common import URL
 from dotenv import load_dotenv
 
-load_dotenv()
+dotenv_path = join(dirname(__file__), '.env')
+load_dotenv(dotenv_path)
 
 # --------------
 # Exchanges Info
 # --------------
 ALPACA_PAPER_KEY: str = os.environ["ALPACA_PAPER_KEY"]
 ALPACA_PAPER_SECRET: str = os.environ["ALPACA_PAPER_SECRET"]
-ALPACA_PAPER_ADDRESS: URL = URL(os.environ["ALPACA_PAPER_ADDRESS"])
+ALPACA_PAPER_ADDRESS: str = os.environ["ALPACA_PAPER_ADDRESS"]
 ALPACA_PAPER_ACCOUNT_NUMBER: str = os.environ["ALPACA_PAPER_ACCOUNT_NUMBER"]
 ALPACA_PAPER_WEBSOCKET: str = os.environ["ALPACA_PAPER_WEBSOCKET"]
 

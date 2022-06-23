@@ -1,5 +1,6 @@
 import alpaca_trade_api as trade_api
 import pytest
+from yarl import URL
 
 from pytrader import config, exchange, common
 
