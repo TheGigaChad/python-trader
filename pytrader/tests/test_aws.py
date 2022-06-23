@@ -23,7 +23,6 @@ def test_aws_bucket_upload_download():
     # model_manager.upload_cloud_model(model)
 
     s3 = boto3.client("s3")
-    boto3.Session()
     s3.upload_file(
         Bucket=config.AWS_MODEL_BUCKET_NAME,
         Key=test_file_name,
