@@ -81,6 +81,7 @@ AWS_IAM_USERNAME: str = os.environ["AWS_IAM_USERNAME"]
 AWS_IAM_PASSWORD: str = os.environ["AWS_IAM_PASSWORD"]
 AWS_IAM_KEY: str = os.environ["AWS_IAM_KEY"]
 AWS_IAM_SECRET: str = os.environ["AWS_IAM_SECRET"]
+AWS_REGION: str = os.environ["AWS_REGION"]
 AWS_IAM_CONSOLE_LOGIN_LINK: str = os.environ["AWS_IAM_CONSOLE_LOGIN_LINK"]
 AWS_MODEL_BUCKET_NAME: str = os.environ["AWS_MODEL_BUCKET_NAME"]
 
