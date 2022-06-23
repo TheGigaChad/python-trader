@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 
 import boto3
+import pytest
 
 from pytrader import config
 
@@ -9,6 +10,7 @@ THIS_DIR = Path(__file__).parent
 DATA_PATH = THIS_DIR / 'data'
 
 
+@pytest.mark.xfail
 def test_aws_bucket_upload_download():
     """
     Tests the uploading and downloading of a test file to the aws S3 server.
