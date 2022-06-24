@@ -12,5 +12,5 @@ setuptools.setup(name='pytrader',
                  description='Python Trader',
                  url='https://github.com/TheGigaChad/python-trader',
                  packages=['pytrader', 'pytrader.common', 'pytrader.models', 'pytrader.ml'],
-                 scripts=['bin/ptTrain.py'],
+                 scripts=['pytrader/bin/ptTrain.py'],
                  install_requires=install_requires)
