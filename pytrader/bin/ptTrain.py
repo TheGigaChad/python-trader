@@ -2,7 +2,7 @@ import sys
 from pathlib import Path
 
 
-# from pytrader import common
+import pytrader
 
 
 def is_help_request(request: str) -> bool:
@@ -90,7 +90,8 @@ def print_help_docs():
 
 
 if __name__ == "__main__":
-
+    print(pytrader.common.State.INIT)
+    print("reee")
     path: Path = Path(__file__).parent.parent
     # print(common.State.INIT)
     # Return help string
