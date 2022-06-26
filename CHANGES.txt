@@ -3,3 +3,21 @@ V0.01
 
 V0.02
     - doing more stuff
+
+V0.08
+    The version where I try and keep better documentation.  Also includes foundational work to facilitate using
+    Machine Learning models and Training into the project.  Yay!
+    - Added Model Manager
+            This is responsible for handling all model interactions including
+                - retrieving models from local stores
+                - push/pull models to AWS
+                - creating models
+    - Added tests for Model Manager interactions.
+            Since AWS tests are encompassed by this, I will need to create some new generic tests.
+    - Added Training Manager
+            This will be how we interact with the training of our models.
+            Both the Model Manager and the Trading Manager will inherit this and use it to train or evaluate our
+            potenital trades and model accuracy.
+    - Added Training Instances
+            These will be the individual training instances for each stock, completing training tasks and keeping track
+            of the status.

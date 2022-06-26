@@ -1,6 +1,7 @@
 import tensorflow as tf
 from pytrader import common, models
 
+Log: common.Log = common.Log(__file__)
 
 gpu_available = tf.config.list_physical_devices('GPU')
 print(gpu_available)
@@ -73,5 +74,7 @@ class MLTrainingInstance:
 
     def train(self):
         self.__status = TrainingState.TRAINING
+        # do stuff
+        Log.i(f"The Model Instance for {self.__name} is currently training.")
+        self.__status = TrainingState.COMPLETE
         pass
-
