@@ -16,7 +16,7 @@ V0.08
             Since AWS tests are encompassed by this, I will need to create some new generic tests.
     - Added Training Manager
             This will be how we interact with the training of our models.
-            Both this and the Trading Manager will inherit this and use it to train or evaluate our
+            Both the Model Manager and the Trading Manager will inherit this and use it to train or evaluate our
             potenital trades and model accuracy.
     - Added Training Instances
             These will be the individual training instances for each stock, completing training tasks and keeping track
