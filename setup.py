@@ -6,7 +6,7 @@ with open('requirements.txt', 'r') as f:
     install_requires = f.read().splitlines()
 
 setuptools.setup(name='pytrader',
-                 version='0.0.8',
+                 version='0.0.9',
                  author='Michael Judd',
                  author_email='MichaelJuddNZ@gmail.com',
                  description='Python Trader',
