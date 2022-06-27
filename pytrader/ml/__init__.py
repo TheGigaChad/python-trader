@@ -1,1 +1,2 @@
 from pytrader.ml.mlTrainingManager import MLTrainingManager
+from pytrader.ml.mlTrainingInstance import MLTrainingInstance

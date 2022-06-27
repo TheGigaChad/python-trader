@@ -72,7 +72,7 @@ def test_populate_dir():
     assert status == common.GenericStatus.SUCCESSFUL
 
 
-@pytest.mark.dependency(depends=["test_update_local_model"])
+@pytest.mark.dependency(depends=["test_update_local_model", "test_train_instance", "test_create_and_train_instance"])
 def test_delete_remote_model():
     asset_name: str = "test_model"
     model_manager: models.ModelManager = models.ModelManager()
