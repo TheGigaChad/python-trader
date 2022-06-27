@@ -21,3 +21,6 @@ V0.08
     - Added Training Instances
             These will be the individual training instances for each stock, completing training tasks and keeping track
             of the status.
+
+V0.09
+    - Added simple training tests
