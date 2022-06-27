@@ -23,9 +23,10 @@ class ModelManager:
         self.__local_repo_dir: Path = Path(__file__).parent / "data"
         self.__url: Url = config.MODEL_REPO_URL
         self.__bucket: str = config.AWS_MODEL_BUCKET_NAME
+        self.__model_suffix: str = ".h5"
 
     @property
-    def directory(self):
+    def directory(self) -> Path:
         return self.__local_repo_dir
 
     @directory.setter
@@ -36,18 +37,25 @@ class ModelManager:
         """
         self.__local_repo_dir = path
 
+    @property
+    def model_suffix(self) -> str:
+        return self.__model_suffix
+
     def get_model_by_name(self, asset_name: str) -> Optional[ModelPackage]:
         """
         Retrieves the model as a package from the local directory.
         :param asset_name: the asset we are trying to find the model for.
         :return: None if there is no file, else the relevant model package.
         """
-        asset_filename: str = asset_name + ".h5"
+        asset_filename: str = self.__append_model_suffix(asset_name)
         model_path: Path = self.__local_repo_dir / asset_filename
         try:
             model: keras.Model = keras.models.load_model(model_path)
             return ModelPackage(asset_name, self.__local_repo_dir, model)
         except FileNotFoundError as e:
+            Log.e(f"No model exists for {asset_name}")
+            return None
+        except IOError as e:
             Log.e(f"No model exists for {asset_name}")
             return None
 
@@ -59,16 +67,17 @@ class ModelManager:
         """
         s3 = boto3.client("s3")
         # Download file
-        test_file_name_out: str = name + ".h5"
+        test_file_name_out: str = self.__append_model_suffix(name)
         output_path: Path = self.__local_repo_dir / test_file_name_out
-        s3.download_file(
-            Filename=str(output_path),
-            Bucket=config.AWS_MODEL_BUCKET_NAME,
-            Key=test_file_name_out,
-        )
+
         # return status of download
         status: common.GenericStatus = common.GenericStatus.UNKNOWN
         try:
+            s3.download_file(
+                Filename=str(output_path),
+                Bucket=config.AWS_MODEL_BUCKET_NAME,
+                Key=test_file_name_out,
+            )
             status = common.GenericStatus.SUCCESSFUL if output_path.is_file() else common.GenericStatus.UNSUCCESSFUL
         except FileNotFoundError as e:
             status = common.GenericStatus.UNSUCCESSFUL
@@ -91,6 +100,14 @@ class ModelManager:
             return True
         else:
             return False
+
+    def __append_model_suffix(self, name: str) -> str:
+        """
+        Helper method that appends the suffix of the model to the string
+        :param name: name of the model
+        :return:  appended model name
+        """
+        return name + self.__model_suffix
 
     def download_all_models(self) -> common.GenericStatus:
         """
@@ -136,7 +153,7 @@ class ModelManager:
         """
         status: common.GenericStatus = common.GenericStatus.UNKNOWN
         try:
-            os.remove(os.path.join(self.__local_repo_dir, name + ".h5"))
+            os.remove(os.path.join(self.__local_repo_dir, self.__append_model_suffix(name)))
             status = common.GenericStatus.SUCCESSFUL
         except FileNotFoundError as e:
             status = common.GenericStatus.UNSUCCESSFUL
@@ -161,7 +178,8 @@ class ModelManager:
         """
         for root, dirs, files in os.walk(self.__local_repo_dir):
             for file in files:
-                os.remove(os.path.join(root, file))
+                if file.__contains__(self.__model_suffix):
+                    os.remove(os.path.join(root, file))
         file_count: int = 0
         for files in os.walk(self.__local_repo_dir):
             file_count = len(files)
@@ -169,7 +187,8 @@ class ModelManager:
 
     def populate_local_repo(self) -> common.GenericStatus:
         """
-        Updates local repository with all currently existing models that exist in the db.
+        Updates local repository with all currently existing models that exist in the db.  Note, the AWS is treated
+        as the MASTER, so ensure all uploaded progress is successful otherwise it will be lost.
         :return: the success of the request to repopulate the local directory
         """
         status: common.GenericStatus = common.GenericStatus.UNKNOWN
@@ -177,11 +196,10 @@ class ModelManager:
         try:
             # delete local files
             status = common.GenericStatus.DELETING
-            self.delete_all_local_models()
+            # self.delete_all_local_models()
             # get new files
             status = common.GenericStatus.DOWNLOADING
-            #     TODO get files
-
+            status = self.download_all_models()
         except Exception as e:
             status = common.GenericStatus.UNSUCCESSFUL
             Log.e(f"Failed to populate the local model repository with a status of {status}")
@@ -199,8 +217,8 @@ class ModelManager:
         s3 = boto3.client("s3")
         s3.upload_file(
             Bucket=self.__bucket,
-            Key=model.name + ".h5",
-            Filename=str(model.directory / model.name) + ".h5"
+            Key=self.__append_model_suffix(model.name),
+            Filename=self.__append_model_suffix(str(model.directory / model.name))
         )
         return common.GenericStatus.SUCCESSFUL
 
@@ -213,7 +231,7 @@ class ModelManager:
         # TODO - this should check the response of the download
         #     delete test item in s3
         s3_res = boto3.resource('s3')
-        s3_res.Object(self.__bucket, model.name + ".h5").delete()
+        s3_res.Object(self.__bucket, self.__append_model_suffix(model.name)).delete()
         return common.GenericStatus.SUCCESSFUL
 
     def delete_cloud_model_by_name(self, name: str) -> common.GenericStatus:
@@ -249,7 +267,7 @@ class ModelManager:
         :param asset_name: the asset we want a model package for.
         :return: the model package
         """
-        path: Path = self.__local_repo_dir / (asset_name + ".h5")
+        path: Path = self.__local_repo_dir / self.__append_model_suffix(asset_name)
         return ModelPackage(asset_name, path, keras.models.load_model(path))
 
     def create_model(self, name: str) -> keras.Model:
@@ -268,6 +286,7 @@ class ModelManager:
         """
         # TODO - This should create the model at the expected location and return the common.GenericStatus
         #  of the operation, not the file as this will be seldom used.
-        path: Path = self.__local_repo_dir / (asset_name + ".h5")
-        model: keras.Model = keras.Model()
+        path: Path = self.__local_repo_dir / self.__append_model_suffix(asset_name)
+        model: keras.Model = keras.models.Sequential([keras.Input(shape=784)])
+        model.save(path)
         return ModelPackage(asset_name, path, model)

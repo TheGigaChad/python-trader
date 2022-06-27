@@ -18,6 +18,17 @@ class MLTrainingManager:
         self.__model_manager: models.ModelManager = models.ModelManager()
         self.__instances: List[MLTrainingInstance] = self.__init_instances()
 
+    @property
+    def model_manager(self):
+        return self.__model_manager
+
+    def refresh_instances(self):
+        """
+        Called to refresh the instance list, useful after changing the directory for the model manager local stores.
+        :return: none.
+        """
+        self.__instances = self.__init_instances()
+
     def monitor_instances(self):
         """
         This will run more-or-less indefinitely, watching the instances and managing them as necessary.
@@ -25,7 +36,7 @@ class MLTrainingManager:
         # TODO
         pass
 
-    def __get_instance_by_name(self, name: str) -> Optional[MLTrainingInstance]:
+    def get_instance_by_name(self, name: str) -> Optional[MLTrainingInstance]:
         """
         Returns the instance if it exists in our list of instances.
         :param name: name of the training instance we want.
@@ -43,7 +54,7 @@ class MLTrainingManager:
         :param name: Name of the asset that the model corresponds to.
         :return: The corresponding instance.
         """
-        instance: MLTrainingInstance = self.__get_instance_by_name(name)
+        instance: MLTrainingInstance = self.get_instance_by_name(name)
         if instance is not None:
             return instance
 
@@ -72,9 +83,9 @@ class MLTrainingManager:
         :param asset_name: name of the asset we want to train a model for. 
         """
         self.__status = common.State.RUNNING
-        instance: MLTrainingInstance = self.__get_instance_by_name(asset_name)
+        instance: MLTrainingInstance = self.__get_or_create_instance_by_name(asset_name)
         if instance is None:
-            Log.w(f"Cannot locate an instance for {asset_name}, please try again or create one.")
+            Log.w(f"Cannot get or create a training instance for {asset_name}.")
             return
         instance.train()
 
@@ -86,13 +97,15 @@ class MLTrainingManager:
         """
         return self.__model_manager.create_model_package(name)
 
-    def create_and_train(self, asset_name: str):
+    def create_and_train(self, asset_name: str) -> MLTrainingInstance:
         """
         Creates and trains a model for specified asset.
         :param asset_name: name of asset.
+        :return: training instance
         """
         instance: MLTrainingInstance = self.__get_or_create_instance_by_name(asset_name)
         instance.train()
+        return instance
 
     def __init_instances(self) -> List[MLTrainingInstance]:
         """
@@ -104,7 +117,11 @@ class MLTrainingManager:
         self.__model_manager.populate_local_repo()
         for root, dirs, files in os.walk(self.__model_manager.directory):
             for file in files:
-                instances.append(MLTrainingInstance(file.name, file))
+                if file.__contains__(self.__model_manager.model_suffix):
+                    # create a package and add to the instance list
+                    file_name: str = file[:file.index('.')]
+                    model_package: models.ModelPackage = self.model_manager.create_existing_model_package(file_name)
+                    instances.append(MLTrainingInstance(file_name, model_package))
         self.__status = common.State.READY
         return instances
 

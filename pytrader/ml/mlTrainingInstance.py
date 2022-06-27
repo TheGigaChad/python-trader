@@ -1,3 +1,5 @@
+import enum
+
 import tensorflow as tf
 from pytrader import common, models
 
@@ -7,7 +9,7 @@ gpu_available = tf.config.list_physical_devices('GPU')
 print(gpu_available)
 
 
-class TrainingState(common.State):
+class TrainingState(enum.Enum):
     """
     Extends generic state to use specific training states too.  Only used here and potentially in tests.
     """
